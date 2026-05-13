@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1618 1000" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Yuji+Boku&amp;family=Yuji+Mai&amp;family=Yuji+Syuku&amp;display=swap');
+      .kanji {
+        font-family: 'Yuji Boku', 'Yuji Mai', 'Yuji Syuku', 'Shippori Mincho B1', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+        font-weight: 400;
+        fill: #0a0a0a;
+      }
+    </style>
+
+    <!-- Ink-brush roughness filter: noise → displacement → grainy texture overlay -->
+    <filter id="brushRai" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="11" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -0.5" result="grainMask"/>
+      <feComposite in="rough" in2="grainMask" operator="out" result="brushed"/>
+      <feMerge>
+        <feMergeNode in="rough"/>
+        <feMergeNode in="brushed"/>
+      </feMerge>
+    </filter>
+
+    <filter id="brushShin" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="23" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="2" seed="31" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -0.5" result="grainMask"/>
+      <feComposite in="rough" in2="grainMask" operator="out" result="brushed"/>
+      <feMerge>
+        <feMergeNode in="rough"/>
+        <feMergeNode in="brushed"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- White background -->
+  <rect width="1618" height="1000" fill="#ffffff"/>
+
+  <!-- ── KANJI: 雷神 ─────────────────────────────────────────────────────
+       雷 anchored at left golden vertical (x=618).
+       神 anchored at right golden vertical (x=1000).
+       Both baselines align near the lower golden horizontal. -->
+  <text class="kanji" x="618" y="780" font-size="420" text-anchor="middle" filter="url(#brushRai)">雷</text>
+  <text class="kanji" x="1000" y="780" font-size="420" text-anchor="middle" filter="url(#brushShin)">神</text>
+</svg>
