@@ -37,9 +37,9 @@ const FRAMES: Array<{ jpg: string; webp: string }> = [
   { jpg: f18j, webp: f18w }, { jpg: f19j, webp: f19w }, { jpg: f20j, webp: f20w },
 ]
 
-// Resting (dark) state uses one calm-ish frame at very low brightness.
+// Resting (dark) state uses one calm-ish frame at moderate dim — storm visible.
 const REST_FRAME = 3
-const REST_BRIGHTNESS = 0.06
+const REST_BRIGHTNESS = 0.22
 
 // Bright/dramatic frames used for the strike flashes.
 const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
@@ -75,7 +75,7 @@ function FrameSequence() {
         // STRIKE: rapid 2–3 frame flicker, then sustained peak hold, then fade.
         const flickerCount = 2 + Math.floor(Math.random() * 2) // 2 or 3 frames
         setFrameIdx(pickStrike())
-        setPeak(0.95 + Math.random() * 0.25)
+        setPeak(1.25 + Math.random() * 0.35) // 1.25 – 1.60 — brighter peaks
         setFlashing(true)
 
         // Rapid frame swaps (each ~90–140ms) during the strike itself
