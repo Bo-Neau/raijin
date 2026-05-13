@@ -1,30 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
-import raijinLogo from './assets/raijin-logo-cutout.png'
+import raijinLogoPng from './assets/raijin-logo-cutout.png'
+import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
-import f00 from './assets/frames/f00.jpg'
-import f01 from './assets/frames/f01.jpg'
-import f02 from './assets/frames/f02.jpg'
-import f03 from './assets/frames/f03.jpg'
-import f04 from './assets/frames/f04.jpg'
-import f05 from './assets/frames/f05.jpg'
-import f06 from './assets/frames/f06.jpg'
-import f07 from './assets/frames/f07.jpg'
-import f08 from './assets/frames/f08.jpg'
-import f09 from './assets/frames/f09.jpg'
-import f10 from './assets/frames/f10.jpg'
-import f11 from './assets/frames/f11.jpg'
-import f12 from './assets/frames/f12.jpg'
-import f13 from './assets/frames/f13.jpg'
-import f14 from './assets/frames/f14.jpg'
-import f15 from './assets/frames/f15.jpg'
-import f16 from './assets/frames/f16.jpg'
-import f17 from './assets/frames/f17.jpg'
-import f18 from './assets/frames/f18.jpg'
-import f19 from './assets/frames/f19.jpg'
-import f20 from './assets/frames/f20.jpg'
+// Dual-format frame imports: WebP for modern browsers (smaller, sharper),
+// JPG as fallback. <picture> chooses at render time.
+import f00j from './assets/frames/f00.jpg'; import f00w from './assets/frames/f00.webp'
+import f01j from './assets/frames/f01.jpg'; import f01w from './assets/frames/f01.webp'
+import f02j from './assets/frames/f02.jpg'; import f02w from './assets/frames/f02.webp'
+import f03j from './assets/frames/f03.jpg'; import f03w from './assets/frames/f03.webp'
+import f04j from './assets/frames/f04.jpg'; import f04w from './assets/frames/f04.webp'
+import f05j from './assets/frames/f05.jpg'; import f05w from './assets/frames/f05.webp'
+import f06j from './assets/frames/f06.jpg'; import f06w from './assets/frames/f06.webp'
+import f07j from './assets/frames/f07.jpg'; import f07w from './assets/frames/f07.webp'
+import f08j from './assets/frames/f08.jpg'; import f08w from './assets/frames/f08.webp'
+import f09j from './assets/frames/f09.jpg'; import f09w from './assets/frames/f09.webp'
+import f10j from './assets/frames/f10.jpg'; import f10w from './assets/frames/f10.webp'
+import f11j from './assets/frames/f11.jpg'; import f11w from './assets/frames/f11.webp'
+import f12j from './assets/frames/f12.jpg'; import f12w from './assets/frames/f12.webp'
+import f13j from './assets/frames/f13.jpg'; import f13w from './assets/frames/f13.webp'
+import f14j from './assets/frames/f14.jpg'; import f14w from './assets/frames/f14.webp'
+import f15j from './assets/frames/f15.jpg'; import f15w from './assets/frames/f15.webp'
+import f16j from './assets/frames/f16.jpg'; import f16w from './assets/frames/f16.webp'
+import f17j from './assets/frames/f17.jpg'; import f17w from './assets/frames/f17.webp'
+import f18j from './assets/frames/f18.jpg'; import f18w from './assets/frames/f18.webp'
+import f19j from './assets/frames/f19.jpg'; import f19w from './assets/frames/f19.webp'
+import f20j from './assets/frames/f20.jpg'; import f20w from './assets/frames/f20.webp'
 
-const FRAMES = [f00,f01,f02,f03,f04,f05,f06,f07,f08,f09,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20]
+const FRAMES: Array<{ jpg: string; webp: string }> = [
+  { jpg: f00j, webp: f00w }, { jpg: f01j, webp: f01w }, { jpg: f02j, webp: f02w },
+  { jpg: f03j, webp: f03w }, { jpg: f04j, webp: f04w }, { jpg: f05j, webp: f05w },
+  { jpg: f06j, webp: f06w }, { jpg: f07j, webp: f07w }, { jpg: f08j, webp: f08w },
+  { jpg: f09j, webp: f09w }, { jpg: f10j, webp: f10w }, { jpg: f11j, webp: f11w },
+  { jpg: f12j, webp: f12w }, { jpg: f13j, webp: f13w }, { jpg: f14j, webp: f14w },
+  { jpg: f15j, webp: f15w }, { jpg: f16j, webp: f16w }, { jpg: f17j, webp: f17w },
+  { jpg: f18j, webp: f18w }, { jpg: f19j, webp: f19w }, { jpg: f20j, webp: f20w },
+]
 
 // Resting (dark) state uses one calm-ish frame at very low brightness.
 const REST_FRAME = 3
@@ -98,17 +109,41 @@ function FrameSequence() {
   }, [])
 
   const brightness = flashing ? peak : REST_BRIGHTNESS
+  const current = FRAMES[frameIdx]
 
   return (
     <div className={`frame-seq ${flashing ? 'flashing' : ''}`}>
-      <img
-        src={FRAMES[frameIdx]}
-        alt=""
-        className="frame-seq-img"
-        style={{ filter: `brightness(${brightness}) contrast(1.1) saturate(0)` }}
-      />
+      <picture>
+        <source srcSet={current.webp} type="image/webp" />
+        <img
+          src={current.jpg}
+          alt=""
+          className="frame-seq-img"
+          style={{ filter: `brightness(${brightness}) contrast(1.1) saturate(0)` }}
+          decoding="async"
+        />
+      </picture>
       <div className="frame-seq-overlay" />
+      {/* Preload every frame off-screen so swaps are instant — no first-strike flicker. */}
+      <div className="frame-preload" aria-hidden>
+        {FRAMES.map((f, i) => (
+          <picture key={i}>
+            <source srcSet={f.webp} type="image/webp" />
+            <img src={f.jpg} alt="" loading="eager" decoding="async" />
+          </picture>
+        ))}
+      </div>
     </div>
+  )
+}
+
+// ── Logo (picture element with WebP + PNG fallback) ────────────────────────
+function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; alt?: string }) {
+  return (
+    <picture>
+      <source srcSet={raijinLogoWebp} type="image/webp" />
+      <img src={raijinLogoPng} alt={alt} className={className} decoding="async" />
+    </picture>
   )
 }
 
@@ -185,7 +220,7 @@ export default function App() {
           className="nav-logo"
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
         >
-          <img src={raijinLogo} alt="RAIJIN" className="nav-logo-img" />
+          <Logo className="nav-logo-img" alt="RAIJIN home" />
         </a>
         <ul className="nav-links">
           <li><a href="#about">About</a></li>
@@ -199,7 +234,7 @@ export default function App() {
         <FrameSequence />
 
         <div className="hero-content">
-          <img src={raijinLogo} alt="RAIJIN — 雷神" className="hero-logo-img" />
+          <Logo className="hero-logo-img" />
           <p className="hero-subtitle">Ancient power. Modern velocity.</p>
           <button
             className="hero-cta"
@@ -236,7 +271,7 @@ export default function App() {
             </div>
           </div>
           <div className="about-side">
-            <img src={raijinLogo} alt="" className="about-logo-img" />
+            <Logo className="about-logo-img" alt="" />
           </div>
         </div>
       </section>
@@ -306,7 +341,7 @@ export default function App() {
       <footer className="site-footer">
         <div className="footer-grid">
           <div className="footer-col">
-            <img src={raijinLogo} alt="RAIJIN" className="footer-logo-img" />
+            <Logo className="footer-logo-img" alt="RAIJIN" />
             <p className="footer-tag">雷神 · The God of Thunder.<br />Ancient power, modern velocity.</p>
           </div>
           <div className="footer-col">
