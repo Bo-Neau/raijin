@@ -37,9 +37,9 @@ const FRAMES: Array<{ jpg: string; webp: string }> = [
   { jpg: f18j, webp: f18w }, { jpg: f19j, webp: f19w }, { jpg: f20j, webp: f20w },
 ]
 
-// Resting (dark) state uses one calm-ish frame at moderate dim — storm visible.
+// Resting state — full natural brightness (0% darkness applied).
 const REST_FRAME = 3
-const REST_BRIGHTNESS = 0.22
+const REST_BRIGHTNESS = 1.0
 
 // Bright/dramatic frames used for the strike flashes.
 const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
