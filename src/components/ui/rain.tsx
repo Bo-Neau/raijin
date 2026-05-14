@@ -1,208 +1,162 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
-interface RainDrop {
-  id: number
-  left: number
-  animationDuration: number
-  opacity: number
-  size: number
-  delay: number
-}
-
-interface Lightning {
-  id: number
-  type: "flash" | "bolt"
-  intensity: number
-  duration: number
-}
-
 interface RainBackgroundProps {
+  /** Number of raindrops. 200–400 looks great on canvas without lag. */
   intensity?: number
+  /** Fall speed multiplier. 0.4 = drizzle, 1.0 = steady, 1.6 = downpour. */
   speed?: number
+  /** Stroke color. */
   color?: string
+  /** Wind angle in degrees. Positive = lean right. */
   angle?: number
+  /** Drop thickness range in CSS pixels. */
   dropSize?: { min: number; max: number }
-  lightningEnabled?: boolean
-  lightningFrequency?: number
-  thunderEnabled?: boolean
-  thunderVolume?: number
-  thunderDelay?: number
+  /** Drop length range in CSS pixels. */
+  dropLength?: { min: number; max: number }
   className?: string
   children?: React.ReactNode
 }
 
+interface Drop {
+  x: number
+  y: number
+  v: number       // vertical velocity (px/frame at 60fps baseline)
+  len: number     // drop length
+  w: number       // stroke width
+  opacity: number
+}
+
+/**
+ * Canvas-based rain. One <canvas> element, all drops drawn per frame via
+ * requestAnimationFrame — drastically smoother than rendering 500 animated
+ * DOM nodes. Respects device pixel ratio (capped at 2) and the user's
+ * prefers-reduced-motion setting (stops the loop).
+ *
+ * Lightning/thunder are intentionally NOT part of this — Raijin's existing
+ * strike system handles those.
+ */
 export function RainBackground({
-  intensity = 100,
+  intensity = 250,
   speed = 1,
-  color = "rgba(174, 194, 224, 0.6)",
-  angle = 0,
-  dropSize = { min: 1, max: 3 },
-  lightningEnabled = false,
-  lightningFrequency = 8,
-  thunderEnabled = false,
-  thunderVolume = 0.5,
-  thunderDelay = 2,
+  color = "rgba(174, 194, 224, 0.55)",
+  angle = 10,
+  dropSize = { min: 0.8, max: 1.6 },
+  dropLength = { min: 10, max: 22 },
   className,
   children,
 }: RainBackgroundProps) {
-  const [raindrops, setRaindrops] = useState<RainDrop[]>([])
-  const [lightning, setLightning] = useState<Lightning | null>(null)
-  const [, setIsFlashing] = useState(false)
-  const thunderAudioRef = useRef<HTMLAudioElement | null>(null)
-  const lightningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const dropsRef = useRef<Drop[]>([])
+  const rafRef = useRef<number>(0)
+  const lastTRef = useRef<number>(0)
 
   useEffect(() => {
-    if (thunderEnabled && typeof window !== "undefined") {
-      thunderAudioRef.current = new Audio()
-      thunderAudioRef.current.volume = thunderVolume
-      thunderAudioRef.current.src =
-        "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT"
+    const canvas = canvasRef.current
+    const wrap = wrapperRef.current
+    if (!canvas || !wrap) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    if (reduced) return
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min
+    const seedDrop = (h: number): Drop => ({
+      x: Math.random() * canvas.clientWidth,
+      y: Math.random() * h, // start scattered so first frame isn't bunched at top
+      v: rand(4, 8) * speed,
+      len: rand(dropLength.min, dropLength.max),
+      w: rand(dropSize.min, dropSize.max),
+      opacity: rand(0.3, 0.85),
+    })
+
+    // Drop reset: only x is randomized; y starts above the viewport
+    const reset = (d: Drop) => {
+      d.x = Math.random() * canvas.clientWidth
+      d.y = -d.len - Math.random() * 60
+      d.v = rand(4, 8) * speed
+      d.len = rand(dropLength.min, dropLength.max)
+      d.w = rand(dropSize.min, dropSize.max)
+      d.opacity = rand(0.3, 0.85)
     }
-  }, [thunderEnabled, thunderVolume])
 
-  useEffect(() => {
-    const drops: RainDrop[] = []
-    for (let i = 0; i < intensity; i++) {
-      drops.push({
-        id: i,
-        left: Math.random() * 100,
-        animationDuration: (Math.random() * 1 + 0.5) / speed,
-        opacity: Math.random() * 0.6 + 0.2,
-        size: Math.random() * (dropSize.max - dropSize.min) + dropSize.min,
-        delay: Math.random() * 2,
-      })
+    const resize = () => {
+      const w = wrap.clientWidth
+      const h = wrap.clientHeight
+      canvas.width = Math.floor(w * dpr)
+      canvas.height = Math.floor(h * dpr)
+      canvas.style.width = `${w}px`
+      canvas.style.height = `${h}px`
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+      // (Re-)seed drop pool to fill current canvas
+      const target = intensity
+      while (dropsRef.current.length < target) dropsRef.current.push(seedDrop(h))
+      while (dropsRef.current.length > target) dropsRef.current.pop()
     }
-    setRaindrops(drops)
-  }, [intensity, speed, dropSize])
+    resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(wrap)
 
-  const triggerLightning = useCallback(() => {
-    if (!lightningEnabled) return
-    const lightningTypes: ("flash" | "bolt")[] = ["flash", "flash", "bolt"]
-    const type = lightningTypes[Math.floor(Math.random() * lightningTypes.length)]
-    const intensityValue = Math.random() * 0.8 + 0.2
-    const duration = type === "flash" ? 150 + Math.random() * 100 : 300 + Math.random() * 200
+    // Pre-compute the wind drift per pixel of fall
+    const tilt = Math.tan((angle * Math.PI) / 180)
 
-    const newLightning: Lightning = { id: Date.now(), type, intensity: intensityValue, duration }
-    setLightning(newLightning)
-    setIsFlashing(true)
+    const draw = (t: number) => {
+      // Frame-rate independent stepping (target ~60fps → dt≈1)
+      const dt = lastTRef.current ? Math.min((t - lastTRef.current) / 16.67, 2.5) : 1
+      lastTRef.current = t
 
-    setTimeout(() => {
-      setIsFlashing(false)
-      setLightning(null)
-    }, duration)
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
+      ctx.clearRect(0, 0, w, h)
 
-    if (thunderEnabled && thunderAudioRef.current) {
-      setTimeout(() => {
-        if (thunderAudioRef.current) {
-          thunderAudioRef.current.currentTime = 0
-          thunderAudioRef.current.play().catch(() => {})
+      ctx.strokeStyle = color
+      ctx.lineCap = "round"
+
+      const drops = dropsRef.current
+      for (let i = 0; i < drops.length; i++) {
+        const d = drops[i]
+        d.y += d.v * dt
+        d.x += d.v * tilt * dt
+
+        if (d.y > h + d.len) {
+          reset(d)
+          continue
         }
-      }, thunderDelay * 1000)
-    }
+        if (d.x > w + d.len) d.x = -d.len
+        if (d.x < -d.len) d.x = w + d.len
 
-    const nextLightning = (lightningFrequency + Math.random() * lightningFrequency) * 1000
-    lightningTimeoutRef.current = setTimeout(triggerLightning, nextLightning)
-  }, [lightningEnabled, lightningFrequency, thunderEnabled, thunderDelay])
+        ctx.globalAlpha = d.opacity
+        ctx.lineWidth = d.w
+        ctx.beginPath()
+        ctx.moveTo(d.x, d.y)
+        ctx.lineTo(d.x - tilt * d.len, d.y - d.len)
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
 
-  useEffect(() => {
-    if (lightningEnabled) {
-      const initialDelay = Math.random() * lightningFrequency * 1000
-      lightningTimeoutRef.current = setTimeout(triggerLightning, initialDelay)
+      rafRef.current = requestAnimationFrame(draw)
     }
+    rafRef.current = requestAnimationFrame(draw)
+
     return () => {
-      if (lightningTimeoutRef.current) clearTimeout(lightningTimeoutRef.current)
+      cancelAnimationFrame(rafRef.current)
+      ro.disconnect()
     }
-  }, [lightningEnabled, lightningFrequency, triggerLightning])
-
-  const generateBoltPath = () => {
-    const startX = Math.random() * 100
-    const segments = 8 + Math.random() * 4
-    let path = `M ${startX} 0`
-    let currentX = startX
-    let currentY = 0
-    for (let i = 1; i <= segments; i++) {
-      const segmentHeight = 100 / segments
-      currentY = i * segmentHeight
-      currentX += (Math.random() - 0.5) * 20
-      currentX = Math.max(0, Math.min(100, currentX))
-      path += ` L ${currentX} ${currentY}`
-    }
-    return path
-  }
+  }, [intensity, speed, color, angle, dropSize.min, dropSize.max, dropLength.min, dropLength.max])
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
-      {/* Lightning Effects */}
-      {lightning && (
-        <>
-          {lightning.type === "flash" && (
-            <div
-              className="rain-lightning-flash pointer-events-none absolute inset-0 z-20"
-              style={{
-                background: `radial-gradient(circle, rgba(255,255,255,${lightning.intensity}) 0%, rgba(135,206,235,${lightning.intensity * 0.3}) 50%, transparent 100%)`,
-                animationDuration: `${lightning.duration}ms`,
-              }}
-            />
-          )}
-          {lightning.type === "bolt" && (
-            <div className="pointer-events-none absolute inset-0 z-20">
-              <svg
-                className="rain-lightning-bolt h-full w-full"
-                style={{ animationDuration: `${lightning.duration}ms` }}
-              >
-                <defs>
-                  <filter id="rain-bolt-glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path
-                  d={generateBoltPath()}
-                  stroke={`rgba(255,255,255,${lightning.intensity})`}
-                  strokeWidth="2"
-                  fill="none"
-                  filter="url(#rain-bolt-glow)"
-                />
-                <path
-                  d={generateBoltPath()}
-                  stroke={`rgba(135,206,235,${lightning.intensity * 0.8})`}
-                  strokeWidth="1"
-                  fill="none"
-                />
-              </svg>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Rain container */}
-      <div
+    <div ref={wrapperRef} className={cn("relative overflow-hidden", className)}>
+      <canvas
+        ref={canvasRef}
         className="pointer-events-none absolute inset-0"
-        style={{ transform: `rotate(${angle}deg)`, transformOrigin: "center center" }}
-      >
-        {raindrops.map((drop) => (
-          <div
-            key={drop.id}
-            className="rain-drop absolute"
-            style={{
-              left: `${drop.left}%`,
-              width: `${drop.size}px`,
-              height: `${drop.size * 10}px`,
-              background: `linear-gradient(to bottom, transparent, ${color})`,
-              borderRadius: `${drop.size}px`,
-              animationDuration: `${drop.animationDuration}s`,
-              animationDelay: `${drop.delay}s`,
-              opacity: drop.opacity,
-              top: "-20px",
-            }}
-          />
-        ))}
-      </div>
-
+        aria-hidden
+      />
       <div className="relative z-10">{children}</div>
     </div>
   )

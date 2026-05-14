@@ -548,16 +548,14 @@ export default function App() {
 
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
 
-        {/* Rain layer — lightning/thunder built into the component are DISABLED
-            (Raijin already has its own strike system via FrameSequence). */}
+        {/* Rain — canvas-based, smooth at 60fps. */}
         <RainBackground
-          intensity={500}
-          speed={0.5}
+          intensity={260}
+          speed={0.9}
           angle={10}
-          color="rgba(174, 194, 224, 0.6)"
-          dropSize={{ min: 1, max: 2 }}
-          lightningEnabled={false}
-          thunderEnabled={false}
+          color="rgba(174, 194, 224, 0.55)"
+          dropSize={{ min: 0.8, max: 1.6 }}
+          dropLength={{ min: 12, max: 24 }}
           className="rain-overlay"
         />
 

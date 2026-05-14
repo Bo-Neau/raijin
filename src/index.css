@@ -981,33 +981,6 @@ body {
   z-index: 6;
 }
 
-/* ── Rain animation (from RainBackground component) ─────────────────────── */
-@keyframes rain-fall {
-  0%   { transform: translateY(-20px); }
-  100% { transform: translateY(calc(100vh + 20px)); }
-}
-@keyframes rain-lightning-flash {
-  0%   { opacity: 0; }
-  10%  { opacity: 1; }
-  20%  { opacity: 0.3; }
-  30%  { opacity: 1; }
-  40%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes rain-lightning-bolt {
-  0%   { opacity: 0; }
-  10%  { opacity: 1; }
-  20%  { opacity: 0.7; }
-  30%  { opacity: 1; }
-  40%  { opacity: 0.4; }
-  50%  { opacity: 0.8; }
-  60%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-.rain-drop             { animation: rain-fall linear infinite; }
-.rain-lightning-flash  { animation-name: rain-lightning-flash; animation-timing-function: ease-out; animation-fill-mode: forwards; }
-.rain-lightning-bolt   { animation-name: rain-lightning-bolt;  animation-timing-function: ease-out; animation-fill-mode: forwards; }
-
 /* ── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .camera-zoom, .camera-pan, .breathing-vignette, .sweep-beam, .dust { animation: none !important; }
