@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import './index.css'
 import { Fog } from './components/ui/fog'
+import { RainBackground } from './components/ui/rain'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
@@ -546,6 +547,19 @@ export default function App() {
         <FrameSequence onFlashChange={setIsFlashing} />
 
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
+
+        {/* Rain layer — lightning/thunder built into the component are DISABLED
+            (Raijin already has its own strike system via FrameSequence). */}
+        <RainBackground
+          intensity={500}
+          speed={0.5}
+          angle={10}
+          color="rgba(174, 194, 224, 0.6)"
+          dropSize={{ min: 1, max: 2 }}
+          lightningEnabled={false}
+          thunderEnabled={false}
+          className="rain-overlay"
+        />
 
         <BreathingVignette />
         <SweepBeam />
