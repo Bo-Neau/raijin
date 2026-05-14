@@ -90,6 +90,19 @@ body {
   z-index: 0;
 }
 
+/* Procedural WebGL lightning — continuous backdrop, visible during the
+   rest state when photo frames render as pure black. Uses mix-blend-mode:
+   screen so its plasma adds to (rather than replaces) whatever is in front. */
+.shader-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  filter: contrast(1.15) saturate(0); /* lock to pure grayscale */
+}
+
 /* The <picture> wrapper just sits on top of the layer like a div */
 .frame-seq picture {
   position: absolute;

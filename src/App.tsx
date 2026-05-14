@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
+import { Lightning } from './components/ui/lightning'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
@@ -231,6 +232,14 @@ export default function App() {
 
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="section-hero">
+        {/* Procedural WebGL lightning — runs continuously, sits BEHIND the
+            photo frames. During rest (frames at 0% brightness = black), the
+            shader is visible through screen-blend. During strikes, the
+            bright photo overpowers it. Continuous electricity vibe. */}
+        <div className="shader-layer">
+          <Lightning speed={0.7} intensity={0.5} size={1.6} />
+        </div>
+
         <FrameSequence />
 
         <div className="hero-content">
