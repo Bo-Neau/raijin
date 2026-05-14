@@ -12,7 +12,6 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import './index.css'
-import { Lightning } from './components/ui/lightning'
 import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
@@ -404,10 +403,6 @@ export default function App() {
 
       <section className="section-hero">
         <FrameSequence onFlashChange={setIsFlashing} />
-
-        <div className="shader-layer">
-          <Lightning hue={220} xOffset={0} speed={1.6} intensity={0.6} size={2} />
-        </div>
 
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
 
