@@ -1,11 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
+// ============================================================================
+// RAIJIN — App.tsx (enhanced storm)
+// Drop this in over src/App.tsx in the Vite repo. It layers on top of the
+// existing frame-swap mechanism without changing the strike scheduler logic;
+// the new effects subscribe to three CustomEvents dispatched on window:
+//   • 'raijin:strike-start'  { peak, frame, ts }
+//   • 'raijin:strike-peak'   { peak }                 — ~80ms after start
+//   • 'raijin:strike-end'    { peak }                 — when bloom drops away
+//
+// Companion: append the CSS at the bottom of src/index.css.
+// ============================================================================
+
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import './index.css'
+import { Lightning } from './components/ui/lightning'
 import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
-// Dual-format frame imports: WebP for modern browsers (smaller, sharper),
-// JPG as fallback. <picture> chooses at render time.
 import f00j from './assets/frames/f00.jpg'; import f00w from './assets/frames/f00.webp'
 import f01j from './assets/frames/f01.jpg'; import f01w from './assets/frames/f01.webp'
 import f02j from './assets/frames/f02.jpg'; import f02w from './assets/frames/f02.webp'
@@ -38,51 +49,73 @@ const FRAMES: Array<{ jpg: string; webp: string }> = [
   { jpg: f18j, webp: f18w }, { jpg: f19j, webp: f19w }, { jpg: f20j, webp: f20w },
 ]
 
-// Resting state — pure black (0% brightness). Storm only visible during strikes.
 const REST_FRAME = 3
-const REST_BRIGHTNESS = 0
-
-// Bright/dramatic frames used for the strike flashes.
 const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
 
-// ── FrameSequence ──────────────────────────────────────────────────────────
-// Real-lightning behavior: long dark rest at random intervals, then a flash
-// that rises QUICKLY (~120ms) to full brightness, HOLDS for 1.5–3s so the
-// logo silhouette is clearly readable, then SLOWLY fades (~1.5s afterglow)
-// back to dark. Each strike uses 1 frame (50%) or 2 frames swapped mid-hold.
-function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) => void }) {
+type Phase = 'rest' | 'flash' | 'peak' | 'hold' | 'fade' | 'after'
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+const isMobile = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(max-width: 768px), (pointer: coarse)').matches
+
+// ── FrameSequence (enhanced) ──────────────────────────────────────────────
+function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void }) {
   const [frameIdx, setFrameIdx] = useState(REST_FRAME)
-  const [flashing, setFlashing] = useState(false)
+  const [phase, setPhase] = useState<Phase>('rest')
   const [peak, setPeak] = useState(1.0)
+  const [scrollY, setScrollY] = useState(0)
+  const [inView, setInView] = useState(true)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  // Propagate flashing state to parent (for fog, lightning intensity, etc.)
+  // Strike state → parent (so Fog still wires to the original "flashing" prop)
+  const flashing = phase === 'flash' || phase === 'peak' || phase === 'hold'
   useEffect(() => { onFlashChange?.(flashing) }, [flashing, onFlashChange])
 
+  // Pause scheduler when hero leaves viewport
   useEffect(() => {
-    let cancelled = false
+    if (!('IntersectionObserver' in window)) return
+    const el = document.querySelector('.section-hero')
+    if (!el) return
+    const obs = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.05 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
+  useEffect(() => {
+    if (!inView) return
+    let cancelled = false
     const queue = (ms: number, fn: () => void) => {
       const t = setTimeout(() => { if (!cancelled) fn() }, ms)
       timersRef.current.push(t)
     }
-
-    const pickStrike = () =>
-      STRIKE_FRAMES[Math.floor(Math.random() * STRIKE_FRAMES.length)]
+    const pickStrike = () => STRIKE_FRAMES[Math.floor(Math.random() * STRIKE_FRAMES.length)]
 
     let isFirst = true
     const scheduleNext = () => {
-      // First strike fires 1s after mount; subsequent strikes 2–4s random rest.
-      const restDelay = isFirst ? 1000 : (2000 + Math.random() * 2000)
+      const restDelay = isFirst ? 900 : (2000 + Math.random() * 2000)
       isFirst = false
       queue(restDelay, () => {
-        // STRIKE: rapid 2–3 frame flicker, then sustained peak hold, then fade.
-        const flickerCount = 2 + Math.floor(Math.random() * 2) // 2 or 3 frames
-        setFrameIdx(pickStrike())
-        setPeak(1.25 + Math.random() * 0.35) // 1.25 – 1.60 — brighter peaks
-        setFlashing(true)
+        const peakValue = 1.125 + Math.random() * 0.315 // 10% dimmer
+        const strikeFrame = pickStrike()
+        setFrameIdx(strikeFrame)
+        setPeak(peakValue)
+        setPhase('flash')
 
-        // Rapid frame swaps (each ~90–140ms) during the strike itself
+        window.dispatchEvent(new CustomEvent('raijin:strike-start', {
+          detail: { peak: peakValue, frame: strikeFrame, ts: performance.now() },
+        }))
+
+        queue(80, () => {
+          setPhase('peak')
+          window.dispatchEvent(new CustomEvent('raijin:strike-peak', { detail: { peak: peakValue } }))
+        })
+
+        // Mid-strike flicker
+        const flickerCount = 2 + Math.floor(Math.random() * 2)
         let elapsed = 0
         for (let i = 1; i < flickerCount; i++) {
           const swapAt = elapsed + 90 + Math.random() * 50
@@ -90,19 +123,20 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) 
           queue(swapAt, () => setFrameIdx(pickStrike()))
         }
 
-        // After flicker, HOLD on the last frame so logo stays readable
-        const holdMs = elapsed + 1500 + Math.random() * 800 // ~1.5–2.3s total peak time
+        queue(280, () => setPhase('hold'))
+        const holdMs = elapsed + 1500 + Math.random() * 800
         queue(holdMs, () => {
-          setFlashing(false)
-          // Wait for fade to complete before resetting to rest frame
-          queue(1300, () => {
+          setPhase('fade')
+          window.dispatchEvent(new CustomEvent('raijin:strike-end', { detail: { peak: peakValue } }))
+          queue(400, () => setPhase('after'))
+          queue(1700, () => {
             setFrameIdx(REST_FRAME)
+            setPhase('rest')
             scheduleNext()
           })
         })
       })
     }
-
     scheduleNext()
 
     return () => {
@@ -110,38 +144,342 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) 
       timersRef.current.forEach(clearTimeout)
       timersRef.current = []
     }
+  }, [inView])
+
+  // Parallax scroll listener
+  useEffect(() => {
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => { setScrollY(window.scrollY); raf = 0 })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const brightness = flashing ? peak : REST_BRIGHTNESS
+  const brightness = flashing ? peak : 0
+  const filterMain = phase === 'peak'
+    ? `brightness(${brightness}) contrast(1.4) saturate(0.15)`
+    : `brightness(${brightness}) contrast(1.1) saturate(0)`
+
   const current = FRAMES[frameIdx]
+  const backY = scrollY * 0.15
+  const fgY   = scrollY * 0.05
 
   return (
-    <div className={`frame-seq ${flashing ? 'flashing' : ''}`}>
-      <picture>
-        <source srcSet={current.webp} type="image/webp" />
-        <img
-          src={current.jpg}
-          alt=""
-          className="frame-seq-img"
-          style={{ filter: `brightness(${brightness}) contrast(1.1) saturate(0)` }}
-          decoding="async"
-        />
-      </picture>
-      <div className="frame-seq-overlay" />
-      {/* Preload every frame off-screen so swaps are instant — no first-strike flicker. */}
-      <div className="frame-preload" aria-hidden>
-        {FRAMES.map((f, i) => (
-          <picture key={i}>
-            <source srcSet={f.webp} type="image/webp" />
-            <img src={f.jpg} alt="" loading="eager" decoding="async" />
+    <>
+      <div className={`frame-seq frame-seq-back ${flashing ? 'flashing' : ''} phase-${phase}`}>
+        <div className="parallax" style={{ transform: `translate3d(0, ${backY}px, 0)` }}>
+          <div className={`camera-zoom ${phase === 'peak' ? 'flinch' : ''}`}>
+            <picture>
+              <source srcSet={current.webp} type="image/webp" />
+              <img
+                src={current.jpg}
+                alt=""
+                className="frame-seq-img camera-pan"
+                style={{ filter: filterMain }}
+                decoding="async"
+              />
+            </picture>
+          </div>
+        </div>
+
+        {/* Afterimage — duplicate frame, screen blend, holds 400ms then fades */}
+        <div className="afterimage parallax" style={{ transform: `translate3d(0, ${backY}px, 0)` }}>
+          <picture>
+            <source srcSet={current.webp} type="image/webp" />
+            <img
+              src={current.jpg}
+              alt=""
+              className="frame-seq-img camera-pan"
+              style={{ filter: `brightness(${peak}) contrast(1.1) saturate(0)` }}
+              decoding="async"
+            />
           </picture>
-        ))}
+        </div>
+
+        <div className="frame-seq-overlay" />
+
+        <div className="frame-preload" aria-hidden>
+          {FRAMES.map((f, i) => (
+            <picture key={i}>
+              <source srcSet={f.webp} type="image/webp" />
+              <img src={f.jpg} alt="" loading="eager" decoding="async" />
+            </picture>
+          ))}
+        </div>
       </div>
+
+      {/* Foreground "near clouds" — 1.08×, blurred, desat, sits BEHIND logo */}
+      <div className="frame-seq frame-seq-fg" style={{ transform: `translate3d(0, ${fgY}px, 0)` }}>
+        <picture>
+          <source srcSet={current.webp} type="image/webp" />
+          <img
+            src={current.jpg}
+            alt=""
+            className="frame-seq-fg-img camera-pan"
+            style={{ filter: `brightness(${flashing ? peak * 0.9 : 0}) blur(8px) saturate(0.5)` }}
+            decoding="async"
+          />
+        </picture>
+      </div>
+    </>
+  )
+}
+
+// ── Full-page lightning flash overlay ─────────────────────────────────────
+function FlashOverlay() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onStrike = (e: Event) => {
+      const peak = (e as CustomEvent<{ peak: number }>).detail.peak
+      el.classList.remove('flash-fire')
+      void el.offsetWidth
+      el.style.setProperty('--flash-peak', String(0.05 * Math.min(1.2, peak / 1.4)))
+      el.classList.add('flash-fire')
+    }
+    window.addEventListener('raijin:strike-start', onStrike)
+    return () => window.removeEventListener('raijin:strike-start', onStrike)
+  }, [])
+  return <div className="flash-overlay" ref={ref} aria-hidden />
+}
+
+// ── Cinematic logo reveal ─────────────────────────────────────────────────
+function StormLogo({ className }: { className?: string }) {
+  const [state, setState] = useState<'rest' | 'peak' | 'after'>('rest')
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined
+    const onStart = () => setState('peak')
+    const onEnd = () => {
+      setState('after')
+      if (t) clearTimeout(t)
+      t = setTimeout(() => setState('rest'), 1500)
+    }
+    window.addEventListener('raijin:strike-start', onStart)
+    window.addEventListener('raijin:strike-end', onEnd)
+    return () => {
+      window.removeEventListener('raijin:strike-start', onStart)
+      window.removeEventListener('raijin:strike-end', onEnd)
+      if (t) clearTimeout(t)
+    }
+  }, [])
+  return (
+    <picture>
+      <source srcSet={raijinLogoWebp} type="image/webp" />
+      <img
+        src={raijinLogoPng}
+        alt="RAIJIN — 雷神"
+        className={`${className ?? 'hero-logo-img'} logo-${state}`}
+        decoding="async"
+      />
+    </picture>
+  )
+}
+
+// ── Ambient atmosphere ────────────────────────────────────────────────────
+function BreathingVignette() { return <div className="breathing-vignette" aria-hidden /> }
+
+function SweepBeam() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const trigger = () => {
+      const el = ref.current
+      if (!el) return
+      el.classList.remove('sweeping')
+      void el.offsetWidth
+      el.classList.add('sweeping')
+    }
+    const schedule = () => {
+      const delay = 25000 + Math.random() * 10000
+      timer = setTimeout(() => { trigger(); schedule() }, delay)
+    }
+    const first = setTimeout(trigger, 12000)
+    schedule()
+    return () => { if (timer) clearTimeout(timer); clearTimeout(first) }
+  }, [])
+  return <div className="sweep-beam" ref={ref} aria-hidden />
+}
+
+function DustParticles() {
+  const mobile = useMemo(() => isMobile(), [])
+  const particles = useMemo(
+    () => Array.from({ length: 32 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      size: 1 + Math.random() * 2,
+      delay: -Math.random() * 30,
+      duration: 22 + Math.random() * 18,
+      drift: -3 + Math.random() * 6,
+    })),
+    [],
+  )
+  if (mobile) return null
+  return (
+    <div className="dust-particles" aria-hidden>
+      {particles.map((p) => (
+        <span
+          key={p.id}
+          className="dust"
+          style={{
+            left: `${p.left}%`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            ['--drift' as any]: `${p.drift}vw`,
+          }}
+        />
+      ))}
     </div>
   )
 }
 
-// ── Logo (picture element with WebP + PNG fallback) ────────────────────────
+// ── Thunder engine (real sample) ──────────────────────────────────────────
+// Place your thunder sample at  src/assets/thunder.mp3  — Vite will fingerprint
+// and serve it. Strip the import line below + use a public/ path if you'd
+// rather skip the bundler step.
+import thunderUrl from './assets/thunder.mp3'
+const LS_AUDIO = 'raijin:audio-on'
+
+function ThunderEngine() {
+  const [enabled, setEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(LS_AUDIO) === '1' } catch { return false }
+  })
+  const [available, setAvailable] = useState(true)
+  const ctxRef = useRef<AudioContext | null>(null)
+  const masterRef = useRef<GainNode | null>(null)
+  const bufferRef = useRef<AudioBuffer | null>(null)
+  const loadingRef = useRef(false)
+
+  useEffect(() => {
+    if (prefersReducedMotion() || isMobile()) {
+      setAvailable(false); setEnabled(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_AUDIO, enabled ? '1' : '0') } catch {}
+  }, [enabled])
+
+  useEffect(() => {
+    if (!enabled || !available) return
+    let cancelled = false
+    let ctx: AudioContext
+    try {
+      const AC = window.AudioContext || (window as any).webkitAudioContext
+      ctx = new AC()
+    } catch {
+      setAvailable(false); return
+    }
+    ctxRef.current = ctx
+    const master = ctx.createGain()
+    master.gain.value = 0.85
+    master.connect(ctx.destination)
+    masterRef.current = master
+
+    // Lazy-load + decode the thunder sample. fetch + decodeAudioData lets us
+    // overlap, offset, and pitch-shift independent hits.
+    if (!bufferRef.current && !loadingRef.current) {
+      loadingRef.current = true
+      fetch(thunderUrl)
+        .then((r) => r.arrayBuffer())
+        .then((ab) => ctx.decodeAudioData(ab))
+        .then((buf) => { if (!cancelled) bufferRef.current = buf })
+        .catch((err) => { console.warn('Thunder sample failed to load:', err) })
+        .finally(() => { loadingRef.current = false })
+    }
+
+    return () => {
+      cancelled = true
+      try { ctx.close() } catch {}
+      ctxRef.current = null; masterRef.current = null
+    }
+  }, [enabled, available])
+
+  const ensureRunning = useCallback(() => {
+    const ctx = ctxRef.current
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {})
+  }, [])
+
+  const fireRumble = useCallback((peak: number) => {
+    const ctx = ctxRef.current, master = masterRef.current, buf = bufferRef.current
+    if (!ctx || !master || !buf) return
+    const now = ctx.currentTime
+    const rate = 0.78 + Math.random() * 0.42                          // 0.78–1.20
+    const vol  = (0.55 + Math.random() * 0.45) * Math.min(1, peak / 1.4)
+    const maxStart = Math.max(0, buf.duration - 1.6)
+    const startOffset = Math.random() * maxStart * 0.4
+    const playableDur = Math.max(0.5, (buf.duration - startOffset) / rate)
+
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.playbackRate.value = rate
+
+    const env = ctx.createGain()
+    const fadeIn = 0.04, fadeOut = 0.35
+    env.gain.setValueAtTime(0.0001, now)
+    env.gain.exponentialRampToValueAtTime(vol, now + fadeIn)
+    env.gain.setValueAtTime(vol, now + playableDur - fadeOut)
+    env.gain.exponentialRampToValueAtTime(0.001, now + playableDur)
+
+    src.connect(env).connect(master)
+    src.start(now, startOffset)
+    src.stop(now + playableDur + 0.05)
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !available) return
+    const onStrike = (e: Event) => {
+      const peak = (e as CustomEvent<{ peak: number }>).detail?.peak ?? 1.3
+      ensureRunning()
+      fireRumble(peak)
+    }
+    window.addEventListener('raijin:strike-start', onStrike)
+    return () => window.removeEventListener('raijin:strike-start', onStrike)
+  }, [enabled, available, fireRumble, ensureRunning])
+
+  if (!available) {
+    return (
+      <button className="thunder-toggle disabled" disabled aria-label="Thunder unavailable">
+        <SpeakerIcon muted />
+        <span className="thunder-label">SILENT</span>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      className={`thunder-toggle ${enabled ? 'on' : 'off'}`}
+      aria-pressed={enabled}
+      aria-label={enabled ? 'Mute thunder' : 'Enable thunder'}
+      onClick={() => {
+        setEnabled((v) => !v)
+        setTimeout(ensureRunning, 30)
+      }}
+    >
+      <SpeakerIcon muted={!enabled} />
+      <span className="thunder-label">{enabled ? 'THUNDER' : 'SILENT'}</span>
+    </button>
+  )
+}
+
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 22 22" fill="none" className={`speaker-icon ${muted ? 'muted' : ''}`} aria-hidden>
+      <path d="M3 8.5 V13.5 H6 L11 17.5 V4.5 L6 8.5 Z" fill="currentColor"/>
+      {!muted && <>
+        <path d="M14 7.5 Q16 11 14 14.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+        <path d="M16.5 5.5 Q19.5 11 16.5 16.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+      </>}
+      {muted && <path d="M14 7 L20 16" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>}
+    </svg>
+  )
+}
+
+// ── Logo (nav / footer use original) ─────────────────────────────────────
 function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; alt?: string }) {
   return (
     <picture>
@@ -151,18 +489,8 @@ function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; al
   )
 }
 
-// ── Marquee ticker ─────────────────────────────────────────────────────────
 function Marquee() {
-  const items = [
-    '⚡ ANCIENT POWER',
-    'MODERN VELOCITY',
-    '雷神',
-    'STRIKE FAST',
-    'FORGE SYSTEMS',
-    'COMMAND THE STORM',
-    'EST. MMXXVI',
-  ]
-  // Duplicate so the loop appears seamless
+  const items = ['⚡ ANCIENT POWER','MODERN VELOCITY','雷神','STRIKE FAST','FORGE SYSTEMS','COMMAND THE STORM','EST. MMXXVI']
   const list = [...items, ...items, ...items]
   return (
     <div className="marquee" aria-hidden="true">
@@ -178,36 +506,23 @@ function Marquee() {
   )
 }
 
-// ── Stats strip ────────────────────────────────────────────────────────────
 function Stats() {
   return (
     <section className="stats-strip">
       <div className="stats-grid">
-        <div className="stat">
-          <div className="stat-num">12<span>+</span></div>
-          <div className="stat-label">Years of velocity</div>
-        </div>
+        <div className="stat"><div className="stat-num">12<span>+</span></div><div className="stat-label">Years of velocity</div></div>
         <div className="stat-divider" />
-        <div className="stat">
-          <div className="stat-num">120<span>+</span></div>
-          <div className="stat-label">Storms weathered</div>
-        </div>
+        <div className="stat"><div className="stat-num">120<span>+</span></div><div className="stat-label">Storms weathered</div></div>
         <div className="stat-divider" />
-        <div className="stat">
-          <div className="stat-num">24<span>/7</span></div>
-          <div className="stat-label">Lightning ready</div>
-        </div>
+        <div className="stat"><div className="stat-num">24<span>/7</span></div><div className="stat-label">Lightning ready</div></div>
         <div className="stat-divider" />
-        <div className="stat">
-          <div className="stat-num">∞</div>
-          <div className="stat-label">Thunder ahead</div>
-        </div>
+        <div className="stat"><div className="stat-num">∞</div><div className="stat-label">Thunder ahead</div></div>
       </div>
     </section>
   )
 }
 
-// ── Main App ─────────────────────────────────────────────────────────────────
+// ── App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [isFlashing, setIsFlashing] = useState(false)
@@ -218,13 +533,12 @@ export default function App() {
   return (
     <div className={`site ${loaded ? 'loaded' : ''}`}>
       <div className="grain" aria-hidden />
-      {/* Navigation */}
+
+      {/* Full-page lightning flash overlay (5% peak, 80ms ramp, 600ms decay) */}
+      <FlashOverlay />
+
       <nav className="site-nav">
-        <a
-          href="#"
-          className="nav-logo"
-          onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-        >
+        <a href="#" className="nav-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
           <Logo className="nav-logo-img" alt="RAIJIN home" />
         </a>
         <ul className="nav-links">
@@ -234,63 +548,52 @@ export default function App() {
         </ul>
       </nav>
 
-      {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="section-hero">
-        {/* Photo-frame storm strikes — drives the master flashing state */}
         <FrameSequence onFlashChange={setIsFlashing} />
 
-        {/* Volumetric fog — only visible during lightning peaks (matches
-            real storm atmosphere: mist illuminated only when flash fires). */}
+        <div className="shader-layer">
+          <Lightning hue={220} xOffset={0} speed={1.6} intensity={0.6} size={2} />
+        </div>
+
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
 
+        <BreathingVignette />
+        <SweepBeam />
+
         <div className="hero-content">
-          <Logo className="hero-logo-img" />
+          <div className="hero-logo-wrap">
+            <StormLogo />
+          </div>
           <p className="hero-subtitle">Ancient power. Modern velocity.</p>
-          <button
-            className="hero-cta"
-            onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
-          >
+          <button className="hero-cta" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}>
             <span>Enter the Storm</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </button>
         </div>
+
+        <DustParticles />
       </section>
 
       <div className="storm-divider" />
 
-      {/* ── ABOUT ──────────────────────────────────────────────────────── */}
       <section className="section-about" id="about">
         <div className="about-grid">
           <div>
             <div className="section-label">Our Origin</div>
-            <h2 className="section-heading">
-              Born from the storm.<br />Built for impact.
-            </h2>
+            <h2 className="section-heading">Born from the storm.<br />Built for impact.</h2>
             <div className="section-body">
-              <p>
-                Raijin takes its name from the Japanese god of lightning, thunder, and storms —
-                a deity of raw, primal force who shapes the world through electrical fury.
-                We embody that same energy: swift, powerful, and transformative.
-              </p>
-              <p>
-                Where others see turbulence, we see opportunity. Every storm brings clarity.
-                Every lightning strike illuminates what was hidden in darkness.
-                We harness that energy to drive the future forward.
-              </p>
+              <p>Raijin takes its name from the Japanese god of lightning, thunder, and storms — a deity of raw, primal force who shapes the world through electrical fury. We embody that same energy: swift, powerful, and transformative.</p>
+              <p>Where others see turbulence, we see opportunity. Every storm brings clarity. Every lightning strike illuminates what was hidden in darkness. We harness that energy to drive the future forward.</p>
               <p>Rooted in ancient wisdom, operating at the speed of light.</p>
             </div>
           </div>
-          <div className="about-side">
-            <Logo className="about-logo-img" alt="" />
-          </div>
+          <div className="about-side"><Logo className="about-logo-img" alt="" /></div>
         </div>
       </section>
 
       <Stats />
-
       <div className="storm-divider" />
 
-      {/* ── SERVICES ───────────────────────────────────────────────────── */}
       <section className="section-services" id="services">
         <div className="services-header">
           <div className="section-label" style={{ justifyContent: 'center' }}>What We Do</div>
@@ -300,28 +603,19 @@ export default function App() {
           <div className="service-card">
             <div className="service-number">01 / 03</div>
             <div className="service-title">Strike Fast</div>
-            <p className="service-desc">
-              Rapid deployment and execution at the speed of lightning. We cut through complexity and
-              deliver results before the thunder follows the flash.
-            </p>
+            <p className="service-desc">Rapid deployment and execution at the speed of lightning. We cut through complexity and deliver results before the thunder follows the flash.</p>
             <span className="service-link">Learn more <span aria-hidden>→</span></span>
           </div>
           <div className="service-card">
             <div className="service-number">02 / 03</div>
             <div className="service-title">Forge Systems</div>
-            <p className="service-desc">
-              Architecting robust, scalable systems forged under pressure. Like steel tempered by
-              lightning, our solutions are built to withstand any storm.
-            </p>
+            <p className="service-desc">Architecting robust, scalable systems forged under pressure. Like steel tempered by lightning, our solutions are built to withstand any storm.</p>
             <span className="service-link">Learn more <span aria-hidden>→</span></span>
           </div>
           <div className="service-card">
             <div className="service-number">03 / 03</div>
             <div className="service-title">Command the Storm</div>
-            <p className="service-desc">
-              Strategic leadership and transformation that channels the energy of change into
-              controlled, purposeful momentum. We don't weather storms — we direct them.
-            </p>
+            <p className="service-desc">Strategic leadership and transformation that channels the energy of change into controlled, purposeful momentum. We don't weather storms — we direct them.</p>
             <span className="service-link">Learn more <span aria-hidden>→</span></span>
           </div>
         </div>
@@ -329,20 +623,12 @@ export default function App() {
 
       <div className="storm-divider" />
 
-      {/* ── CONTACT ────────────────────────────────────────────────────── */}
       <section className="section-contact" id="contact">
         <div className="contact-content">
           <div className="section-label" style={{ justifyContent: 'center' }}>Summon Us</div>
-          <h2 className="contact-heading">
-            Ready to harness<br />the storm?
-          </h2>
-          <p className="contact-sub">
-            The thunder answers those bold enough to call upon it.
-          </p>
-          <button className="cta-button">
-            <span>Initiate Contact</span>
-            <span className="cta-arrow" aria-hidden>→</span>
-          </button>
+          <h2 className="contact-heading">Ready to harness<br />the storm?</h2>
+          <p className="contact-sub">The thunder answers those bold enough to call upon it.</p>
+          <button className="cta-button"><span>Initiate Contact</span><span className="cta-arrow" aria-hidden>→</span></button>
         </div>
       </section>
 
@@ -384,6 +670,9 @@ export default function App() {
           <span>Built under the storm.</span>
         </div>
       </footer>
+
+      {/* Thunder toggle (Apple-style speaker, bottom-right) */}
+      <ThunderEngine />
     </div>
   )
 }
