@@ -90,14 +90,42 @@ body {
   z-index: 0;
 }
 
-/* Procedural WebGL lightning — visible always, sits ABOVE the photo frames
-   via screen blending so its plasma adds rather than replaces. */
+/* Procedural WebGL lightning — fills the hero. Locked to monochrome via
+   saturate(0). Sits as the primary backdrop now (no photo frames). */
 .shader-layer {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 1;
   pointer-events: none;
+  filter: saturate(0) contrast(1.1);
+}
+
+/* ── Page-wide brightness pulse — the "real lightning" page flash.
+   Fixed full-screen white overlay that brightens fast on strike and
+   slowly fades back to invisible. Driven by .site.is-flashing toggle. */
+.page-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: rgba(240, 248, 255, 1);
+  opacity: 0;
   mix-blend-mode: screen;
+  transition: opacity 1500ms cubic-bezier(0.16, 1, 0.3, 1); /* slow afterglow fade */
+}
+
+.site.is-flashing .page-flash {
+  opacity: 0.22;        /* peak page brightness — not blinding, room-lit feel */
+  transition: opacity 80ms ease-out; /* fast rise — real lightning timescale */
+}
+
+/* Pulse-amplify the whole site during a strike for an extra "lit room" feel */
+.site {
+  transition: filter 1500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site.is-flashing {
+  transition: filter 80ms ease-out;
+  filter: brightness(1.15);
 }
 
 /* ── Volumetric fog/mist ─────────────────────────────────────────────────
@@ -520,8 +548,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(to bottom, rgba(10,10,15,0.85), transparent);
-  backdrop-filter: blur(4px);
+  /* Fully transparent — no banner, no gradient, no blur */
+  background: transparent;
 }
 
 .nav-logo {

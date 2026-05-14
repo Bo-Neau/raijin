@@ -5,101 +5,37 @@ import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
-// Dual-format frame imports: WebP for modern browsers (smaller, sharper),
-// JPG as fallback. <picture> chooses at render time.
-import f00j from './assets/frames/f00.jpg'; import f00w from './assets/frames/f00.webp'
-import f01j from './assets/frames/f01.jpg'; import f01w from './assets/frames/f01.webp'
-import f02j from './assets/frames/f02.jpg'; import f02w from './assets/frames/f02.webp'
-import f03j from './assets/frames/f03.jpg'; import f03w from './assets/frames/f03.webp'
-import f04j from './assets/frames/f04.jpg'; import f04w from './assets/frames/f04.webp'
-import f05j from './assets/frames/f05.jpg'; import f05w from './assets/frames/f05.webp'
-import f06j from './assets/frames/f06.jpg'; import f06w from './assets/frames/f06.webp'
-import f07j from './assets/frames/f07.jpg'; import f07w from './assets/frames/f07.webp'
-import f08j from './assets/frames/f08.jpg'; import f08w from './assets/frames/f08.webp'
-import f09j from './assets/frames/f09.jpg'; import f09w from './assets/frames/f09.webp'
-import f10j from './assets/frames/f10.jpg'; import f10w from './assets/frames/f10.webp'
-import f11j from './assets/frames/f11.jpg'; import f11w from './assets/frames/f11.webp'
-import f12j from './assets/frames/f12.jpg'; import f12w from './assets/frames/f12.webp'
-import f13j from './assets/frames/f13.jpg'; import f13w from './assets/frames/f13.webp'
-import f14j from './assets/frames/f14.jpg'; import f14w from './assets/frames/f14.webp'
-import f15j from './assets/frames/f15.jpg'; import f15w from './assets/frames/f15.webp'
-import f16j from './assets/frames/f16.jpg'; import f16w from './assets/frames/f16.webp'
-import f17j from './assets/frames/f17.jpg'; import f17w from './assets/frames/f17.webp'
-import f18j from './assets/frames/f18.jpg'; import f18w from './assets/frames/f18.webp'
-import f19j from './assets/frames/f19.jpg'; import f19w from './assets/frames/f19.webp'
-import f20j from './assets/frames/f20.jpg'; import f20w from './assets/frames/f20.webp'
-
-const FRAMES: Array<{ jpg: string; webp: string }> = [
-  { jpg: f00j, webp: f00w }, { jpg: f01j, webp: f01w }, { jpg: f02j, webp: f02w },
-  { jpg: f03j, webp: f03w }, { jpg: f04j, webp: f04w }, { jpg: f05j, webp: f05w },
-  { jpg: f06j, webp: f06w }, { jpg: f07j, webp: f07w }, { jpg: f08j, webp: f08w },
-  { jpg: f09j, webp: f09w }, { jpg: f10j, webp: f10w }, { jpg: f11j, webp: f11w },
-  { jpg: f12j, webp: f12w }, { jpg: f13j, webp: f13w }, { jpg: f14j, webp: f14w },
-  { jpg: f15j, webp: f15w }, { jpg: f16j, webp: f16w }, { jpg: f17j, webp: f17w },
-  { jpg: f18j, webp: f18w }, { jpg: f19j, webp: f19w }, { jpg: f20j, webp: f20w },
-]
-
-// Resting state — pure black (0% brightness). Storm only visible during strikes.
-const REST_FRAME = 3
-const REST_BRIGHTNESS = 0
-
-// Bright/dramatic frames used for the strike flashes.
-const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
-
-// ── FrameSequence ──────────────────────────────────────────────────────────
-// Real-lightning behavior: long dark rest at random intervals, then a flash
-// that rises QUICKLY (~120ms) to full brightness, HOLDS for 1.5–3s so the
-// logo silhouette is clearly readable, then SLOWLY fades (~1.5s afterglow)
-// back to dark. Each strike uses 1 frame (50%) or 2 frames swapped mid-hold.
-function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) => void }) {
-  const [frameIdx, setFrameIdx] = useState(REST_FRAME)
+// ── Strike timing hook ──────────────────────────────────────────────────────
+// Random rest periods punctuated by brief lightning peaks. No assets, no
+// frame swapping — just a clean state machine that drives:
+//   - the page-wide brightness pulse (dark→bright→dark)
+//   - the fog opacity
+//   - the shader intensity multiplier (optional)
+//
+// Rest: 2–4 sec random dark hold.
+// Strike: 1.5–3 sec of "lit" state.
+function useStrikeTiming() {
   const [flashing, setFlashing] = useState(false)
-  const [peak, setPeak] = useState(1.0)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-
-  // Propagate flashing state to parent (for fog, lightning intensity, etc.)
-  useEffect(() => { onFlashChange?.(flashing) }, [flashing, onFlashChange])
 
   useEffect(() => {
     let cancelled = false
-
     const queue = (ms: number, fn: () => void) => {
       const t = setTimeout(() => { if (!cancelled) fn() }, ms)
       timersRef.current.push(t)
     }
 
-    const pickStrike = () =>
-      STRIKE_FRAMES[Math.floor(Math.random() * STRIKE_FRAMES.length)]
-
     let isFirst = true
     const scheduleNext = () => {
-      // First strike fires 1s after mount; subsequent strikes 2–4s random rest.
-      const restDelay = isFirst ? 1000 : (2000 + Math.random() * 2000)
+      const restDelay = isFirst ? 1000 : (2000 + Math.random() * 2000) // 2–4s
       isFirst = false
       queue(restDelay, () => {
-        // STRIKE: rapid 2–3 frame flicker, then sustained peak hold, then fade.
-        const flickerCount = 2 + Math.floor(Math.random() * 2) // 2 or 3 frames
-        setFrameIdx(pickStrike())
-        setPeak(1.25 + Math.random() * 0.35) // 1.25 – 1.60 — brighter peaks
         setFlashing(true)
-
-        // Rapid frame swaps (each ~90–140ms) during the strike itself
-        let elapsed = 0
-        for (let i = 1; i < flickerCount; i++) {
-          const swapAt = elapsed + 90 + Math.random() * 50
-          elapsed = swapAt
-          queue(swapAt, () => setFrameIdx(pickStrike()))
-        }
-
-        // After flicker, HOLD on the last frame so logo stays readable
-        const holdMs = elapsed + 1500 + Math.random() * 800 // ~1.5–2.3s total peak time
+        const holdMs = 1500 + Math.random() * 1500 // 1.5–3s lit
         queue(holdMs, () => {
           setFlashing(false)
-          // Wait for fade to complete before resetting to rest frame
-          queue(1300, () => {
-            setFrameIdx(REST_FRAME)
-            scheduleNext()
-          })
+          // Wait for fade to finish before scheduling the next strike
+          queue(1300, () => scheduleNext())
         })
       })
     }
@@ -113,43 +49,7 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) 
     }
   }, [])
 
-  const brightness = flashing ? peak : REST_BRIGHTNESS
-  const current = FRAMES[frameIdx]
-
-  return (
-    <div className={`frame-seq ${flashing ? 'flashing' : ''}`}>
-      <picture>
-        <source srcSet={current.webp} type="image/webp" />
-        <img
-          src={current.jpg}
-          alt=""
-          className="frame-seq-img"
-          style={{ filter: `brightness(${brightness}) contrast(1.1) saturate(0)` }}
-          decoding="async"
-        />
-      </picture>
-      <div className="frame-seq-overlay" />
-      {/* Preload every frame off-screen so swaps are instant — no first-strike flicker. */}
-      <div className="frame-preload" aria-hidden>
-        {FRAMES.map((f, i) => (
-          <picture key={i}>
-            <source srcSet={f.webp} type="image/webp" />
-            <img src={f.jpg} alt="" loading="eager" decoding="async" />
-          </picture>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Logo (picture element with WebP + PNG fallback) ────────────────────────
-function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; alt?: string }) {
-  return (
-    <picture>
-      <source srcSet={raijinLogoWebp} type="image/webp" />
-      <img src={raijinLogoPng} alt={alt} className={className} decoding="async" />
-    </picture>
-  )
+  return flashing
 }
 
 // ── Marquee ticker ─────────────────────────────────────────────────────────
@@ -163,7 +63,6 @@ function Marquee() {
     'COMMAND THE STORM',
     'EST. MMXXVI',
   ]
-  // Duplicate so the loop appears seamless
   const list = [...items, ...items, ...items]
   return (
     <div className="marquee" aria-hidden="true">
@@ -211,22 +110,32 @@ function Stats() {
 // ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [loaded, setLoaded] = useState(false)
-  const [isFlashing, setIsFlashing] = useState(false)
+  const isFlashing = useStrikeTiming()
+
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 40)
     return () => clearTimeout(t)
   }, [])
+
   return (
-    <div className={`site ${loaded ? 'loaded' : ''}`}>
+    <div className={`site ${loaded ? 'loaded' : ''} ${isFlashing ? 'is-flashing' : ''}`}>
       <div className="grain" aria-hidden />
-      {/* Navigation */}
+
+      {/* Full-page brightness pulse — flashes white during strikes,
+          fades slowly back to dark. Sits above everything except cursor. */}
+      <div className="page-flash" aria-hidden />
+
+      {/* Navigation — fully transparent now (no banner background) */}
       <nav className="site-nav">
         <a
           href="#"
           className="nav-logo"
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
         >
-          <Logo className="nav-logo-img" alt="RAIJIN home" />
+          <picture>
+            <source srcSet={raijinLogoWebp} type="image/webp" />
+            <img src={raijinLogoPng} alt="RAIJIN" className="nav-logo-img" />
+          </picture>
         </a>
         <ul className="nav-links">
           <li><a href="#about">About</a></li>
@@ -237,22 +146,19 @@ export default function App() {
 
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="section-hero">
-        {/* Photo-frame storm strikes — drives the master flashing state */}
-        <FrameSequence onFlashChange={setIsFlashing} />
-
-        {/* Continuous WebGL lightning shader — original hero-odyssey settings.
-            Layered ABOVE the frames via screen-blend so its plasma is always
-            visible regardless of frame brightness. */}
+        {/* Continuous WebGL lightning shader — locked to monochrome via CSS. */}
         <div className="shader-layer">
-          <Lightning hue={220} xOffset={0} speed={1.6} intensity={0.6} size={2} />
+          <Lightning hue={0} xOffset={0} speed={1.6} intensity={0.6} size={2} />
         </div>
 
-        {/* Volumetric fog — only visible during lightning peaks (matches
-            real storm atmosphere: mist illuminated only when flash fires). */}
-        <Fog active={isFlashing} intensity={0.55} speed={1.2} />
+        {/* Volumetric fog — visible only during strikes. */}
+        <Fog active={isFlashing} intensity={0.6} speed={1.2} />
 
         <div className="hero-content">
-          <Logo className="hero-logo-img" />
+          <picture>
+            <source srcSet={raijinLogoWebp} type="image/webp" />
+            <img src={raijinLogoPng} alt="RAIJIN — 雷神" className="hero-logo-img" />
+          </picture>
           <p className="hero-subtitle">Ancient power. Modern velocity.</p>
           <button
             className="hero-cta"
@@ -263,6 +169,8 @@ export default function App() {
           </button>
         </div>
       </section>
+
+      <Stats />
 
       <div className="storm-divider" />
 
@@ -289,12 +197,13 @@ export default function App() {
             </div>
           </div>
           <div className="about-side">
-            <Logo className="about-logo-img" alt="" />
+            <picture>
+              <source srcSet={raijinLogoWebp} type="image/webp" />
+              <img src={raijinLogoPng} alt="" className="about-logo-img" />
+            </picture>
           </div>
         </div>
       </section>
-
-      <Stats />
 
       <div className="storm-divider" />
 
@@ -359,7 +268,10 @@ export default function App() {
       <footer className="site-footer">
         <div className="footer-grid">
           <div className="footer-col">
-            <Logo className="footer-logo-img" alt="RAIJIN" />
+            <picture>
+              <source srcSet={raijinLogoWebp} type="image/webp" />
+              <img src={raijinLogoPng} alt="RAIJIN" className="footer-logo-img" />
+            </picture>
             <p className="footer-tag">雷神 · The God of Thunder.<br />Ancient power, modern velocity.</p>
           </div>
           <div className="footer-col">
