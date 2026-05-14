@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
 import { Lightning } from './components/ui/lightning'
+import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
@@ -50,11 +51,14 @@ const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
 // that rises QUICKLY (~120ms) to full brightness, HOLDS for 1.5–3s so the
 // logo silhouette is clearly readable, then SLOWLY fades (~1.5s afterglow)
 // back to dark. Each strike uses 1 frame (50%) or 2 frames swapped mid-hold.
-function FrameSequence() {
+function FrameSequence({ onFlashChange }: { onFlashChange?: (flashing: boolean) => void }) {
   const [frameIdx, setFrameIdx] = useState(REST_FRAME)
   const [flashing, setFlashing] = useState(false)
   const [peak, setPeak] = useState(1.0)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  // Propagate flashing state to parent (for fog, lightning intensity, etc.)
+  useEffect(() => { onFlashChange?.(flashing) }, [flashing, onFlashChange])
 
   useEffect(() => {
     let cancelled = false
@@ -207,6 +211,7 @@ function Stats() {
 // ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [loaded, setLoaded] = useState(false)
+  const [isFlashing, setIsFlashing] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 40)
     return () => clearTimeout(t)
@@ -232,15 +237,19 @@ export default function App() {
 
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="section-hero">
-        {/* Procedural WebGL lightning — runs continuously, sits BEHIND the
-            photo frames. During rest (frames at 0% brightness = black), the
-            shader is visible through screen-blend. During strikes, the
-            bright photo overpowers it. Continuous electricity vibe. */}
+        {/* Photo-frame storm strikes — drives the master flashing state */}
+        <FrameSequence onFlashChange={setIsFlashing} />
+
+        {/* Continuous WebGL lightning shader — original hero-odyssey settings.
+            Layered ABOVE the frames via screen-blend so its plasma is always
+            visible regardless of frame brightness. */}
         <div className="shader-layer">
-          <Lightning speed={0.7} intensity={0.5} size={1.6} />
+          <Lightning hue={220} xOffset={0} speed={1.6} intensity={0.6} size={2} />
         </div>
 
-        <FrameSequence />
+        {/* Volumetric fog — only visible during lightning peaks (matches
+            real storm atmosphere: mist illuminated only when flash fires). */}
+        <Fog active={isFlashing} intensity={0.55} speed={1.2} />
 
         <div className="hero-content">
           <Logo className="hero-logo-img" />

@@ -90,17 +90,58 @@ body {
   z-index: 0;
 }
 
-/* Procedural WebGL lightning — continuous backdrop, visible during the
-   rest state when photo frames render as pure black. Uses mix-blend-mode:
-   screen so its plasma adds to (rather than replaces) whatever is in front. */
+/* Procedural WebGL lightning — visible always, sits ABOVE the photo frames
+   via screen blending so its plasma adds rather than replaces. */
 .shader-layer {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 4;
   pointer-events: none;
   mix-blend-mode: screen;
-  opacity: 0.6;
-  filter: contrast(1.15) saturate(0); /* lock to pure grayscale */
+}
+
+/* ── Volumetric fog/mist ─────────────────────────────────────────────────
+   Two layered turbulence noise planes drift in opposite directions to
+   simulate volumetric mist rolling through the storm. Wrapper fades in
+   on strikes, out during rest. */
+.fog-root {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+}
+
+.fog-layer {
+  position: absolute;
+  top: -20%;
+  left: -50%;
+  width: 200%;
+  height: 140%;
+  background-color: currentColor;
+  will-change: transform, filter;
+}
+
+.fog-layer-back {
+  filter: url(#fog-noise-a) blur(14px);
+  opacity: 0.55;
+  animation: fogDriftRight linear infinite;
+}
+
+.fog-layer-front {
+  filter: url(#fog-noise-b) blur(22px);
+  opacity: 0.4;
+  animation: fogDriftLeft linear infinite;
+}
+
+@keyframes fogDriftRight {
+  from { transform: translate3d(-12%, 0, 0); }
+  to   { transform: translate3d(12%, 0, 0); }
+}
+@keyframes fogDriftLeft {
+  from { transform: translate3d(10%, 4%, 0); }
+  to   { transform: translate3d(-10%, -4%, 0); }
 }
 
 /* The <picture> wrapper just sits on top of the layer like a div */
