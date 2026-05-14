@@ -1,34 +1,12 @@
-import { useEffect, useState } from 'react'
-
 /**
- * StormClouds — two parallax layers of volumetric clouds at the bottom of
- * the hero. Each layer is a row of overlapping radial-gradient ellipse
- * "puffs" pushed through a turbulence-based feDisplacementMap so the smooth
- * ellipse edges break into organic, billowy cloud silhouettes. Far bank is
- * cooler/softer and drifts slowly; near bank is darker/denser and drifts
- * faster. Both parallax against scroll.
- *
- * Ported pixel-faithfully from raijin/project/ambient.jsx (Claude Design).
+ * StormClouds — two layers of volumetric clouds at the bottom of the hero.
+ * Each layer is a row of overlapping radial-gradient ellipse "puffs" pushed
+ * through a turbulence-based feDisplacementMap so the smooth ellipse edges
+ * break into organic, billowy cloud silhouettes. Far bank is cooler/softer
+ * and drifts slowly; near bank is darker/denser and drifts faster.
+ * (Scroll parallax intentionally removed.)
  */
 export function StormClouds() {
-  const [scrollY, setScrollY] = useState(0)
-
-  useEffect(() => {
-    let raf = 0
-    const onScroll = () => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        setScrollY(window.scrollY)
-        raf = 0
-      })
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const farY  = scrollY * 0.10
-  const nearY = scrollY * 0.28
-
   // Hand-tuned puff layouts (viewBox = 1600×600). Overlapping, varied
   // heights, asymmetric — reads as a real cloud bank.
   const farClouds = [
@@ -79,11 +57,7 @@ export function StormClouds() {
       </svg>
 
       {/* Far bank — cooler, softer, slow drift */}
-      <div
-        className="storm-clouds clouds-far"
-        style={{ transform: `translate3d(0, ${farY}px, 0)` }}
-        aria-hidden
-      >
+      <div className="storm-clouds clouds-far" aria-hidden>
         <div className="cloud-drift cloud-drift-slow">
           <svg viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice">
             <g filter="url(#cloud-displace-far)">
@@ -100,11 +74,7 @@ export function StormClouds() {
       </div>
 
       {/* Near bank — denser, darker, sits lower, faster drift */}
-      <div
-        className="storm-clouds clouds-near"
-        style={{ transform: `translate3d(0, ${nearY}px, 0)` }}
-        aria-hidden
-      >
+      <div className="storm-clouds clouds-near" aria-hidden>
         <div className="cloud-drift cloud-drift-fast">
           <svg viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice">
             <g filter="url(#cloud-displace-near)">

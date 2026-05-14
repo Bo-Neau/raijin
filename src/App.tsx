@@ -68,7 +68,6 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void
   const [frameIdx, setFrameIdx] = useState(REST_FRAME)
   const [phase, setPhase] = useState<Phase>('rest')
   const [peak, setPeak] = useState(1.0)
-  const [scrollY, setScrollY] = useState(0)
   const [inView, setInView] = useState(true)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -147,30 +146,17 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void
     }
   }, [inView])
 
-  // Parallax scroll listener
-  useEffect(() => {
-    let raf = 0
-    const onScroll = () => {
-      if (raf) return
-      raf = requestAnimationFrame(() => { setScrollY(window.scrollY); raf = 0 })
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   const brightness = flashing ? peak : 0
   const filterMain = phase === 'peak'
     ? `brightness(${brightness}) contrast(1.4) saturate(0.15)`
     : `brightness(${brightness}) contrast(1.1) saturate(0)`
 
   const current = FRAMES[frameIdx]
-  const backY = scrollY * 0.15
-  const fgY   = scrollY * 0.05
 
   return (
     <>
       <div className={`frame-seq frame-seq-back ${flashing ? 'flashing' : ''} phase-${phase}`}>
-        <div className="parallax" style={{ transform: `translate3d(0, ${backY}px, 0)` }}>
+        <div className="parallax">
           <div className={`camera-zoom ${phase === 'peak' ? 'flinch' : ''}`}>
             <picture>
               <source srcSet={current.webp} type="image/webp" />
@@ -186,7 +172,7 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void
         </div>
 
         {/* Afterimage — duplicate frame, screen blend, holds 400ms then fades */}
-        <div className="afterimage parallax" style={{ transform: `translate3d(0, ${backY}px, 0)` }}>
+        <div className="afterimage parallax">
           <picture>
             <source srcSet={current.webp} type="image/webp" />
             <img
@@ -212,7 +198,7 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void
       </div>
 
       {/* Foreground "near clouds" — 1.08×, blurred, desat, sits BEHIND logo */}
-      <div className="frame-seq frame-seq-fg" style={{ transform: `translate3d(0, ${fgY}px, 0)` }}>
+      <div className="frame-seq frame-seq-fg">
         <picture>
           <source srcSet={current.webp} type="image/webp" />
           <img
