@@ -14,7 +14,6 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import './index.css'
 import { Fog } from './components/ui/fog'
 import { RainBackground } from './components/ui/rain'
-import { CloudBand } from './components/ui/cloud-band'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
@@ -593,9 +592,6 @@ export default function App() {
           <div className="about-side"><Logo className="about-logo-img" alt="" /></div>
         </div>
       </section>
-
-      {/* Drifting cloud band — visual bridge between hero and Stats */}
-      <CloudBand height={260} speed={1} />
 
       <Stats />
       <div className="storm-divider" />
