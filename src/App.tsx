@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
-import { Lightning } from './components/ui/lightning'
 import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
@@ -239,13 +238,6 @@ export default function App() {
       <section className="section-hero">
         {/* Photo-frame storm strikes — drives the master flashing state */}
         <FrameSequence onFlashChange={setIsFlashing} />
-
-        {/* Continuous WebGL lightning shader — original hero-odyssey settings.
-            Layered ABOVE the frames via screen-blend so its plasma is always
-            visible regardless of frame brightness. */}
-        <div className="shader-layer">
-          <Lightning hue={220} xOffset={0} speed={1.6} intensity={0.6} size={2} />
-        </div>
 
         {/* Volumetric fog — only visible during lightning peaks (matches
             real storm atmosphere: mist illuminated only when flash fires). */}

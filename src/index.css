@@ -520,8 +520,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(to bottom, rgba(10,10,15,0.85), transparent);
-  backdrop-filter: blur(4px);
+  /* No banner — fully transparent */
+  background: transparent;
 }
 
 .nav-logo {
