@@ -981,9 +981,55 @@ body {
   z-index: 6;
 }
 
+/* ── Cloud band — visual bridge between sections ────────────────────────── */
+.cloud-band {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #0a0a0a 0%, #0c0c0c 50%, #0a0a0a 100%);
+  isolation: isolate;
+  /* Soft fade-into-neighbouring-sections via masking */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+.cloud-band .cloud-layer {
+  position: absolute;
+  top: -20%;
+  left: -200%;
+  width: 400%; /* extra room so the loop wraps invisibly */
+  height: 140%;
+  will-change: transform;
+  animation-name: cloudDriftRight;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.cloud-band .cloud-back  {
+  filter: url(#cloud-noise-back) blur(28px);
+  opacity: 0.55;
+  animation-direction: normal;
+}
+.cloud-band .cloud-mid {
+  filter: url(#cloud-noise-mid) blur(18px);
+  opacity: 0.65;
+  animation-direction: reverse;
+}
+.cloud-band .cloud-front {
+  filter: url(#cloud-noise-front) blur(10px);
+  opacity: 0.85;
+  animation-direction: normal;
+}
+
+@keyframes cloudDriftRight {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(25%, 0, 0); }
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .camera-zoom, .camera-pan, .breathing-vignette, .sweep-beam, .dust { animation: none !important; }
   .flash-overlay.flash-fire { animation-duration: 200ms; }
   .dust-particles { display: none; }
+  .cloud-band .cloud-layer { animation: none !important; }
 }
