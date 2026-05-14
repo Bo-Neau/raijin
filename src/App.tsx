@@ -14,6 +14,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import './index.css'
 import { Fog } from './components/ui/fog'
 import { RainBackground } from './components/ui/rain'
+import { StormClouds } from './components/ui/storm-clouds'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
 import raijinLogoWebp from './assets/raijin-logo-cutout.webp'
 
@@ -547,6 +548,9 @@ export default function App() {
         <FrameSequence onFlashChange={setIsFlashing} />
 
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
+
+        {/* Volumetric storm clouds — two parallax layers of displaced ellipses */}
+        <StormClouds />
 
         {/* Rain — canvas-based, smooth at 60fps. */}
         <RainBackground
