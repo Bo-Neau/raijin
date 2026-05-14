@@ -10,7 +10,7 @@
 // Companion: append the CSS at the bottom of src/index.css.
 // ============================================================================
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import './index.css'
 import { Fog } from './components/ui/fog'
 import raijinLogoPng from './assets/raijin-logo-cutout.png'
@@ -52,6 +52,10 @@ const REST_FRAME = 3
 const STRIKE_FRAMES = [4, 7, 16, 17, 19, 20]
 
 type Phase = 'rest' | 'flash' | 'peak' | 'hold' | 'fade' | 'after'
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 const isMobile = () =>
   typeof window !== 'undefined' &&
@@ -332,6 +336,143 @@ function DustParticles() {
   )
 }
 
+// ── Thunder engine (real sample) ──────────────────────────────────────────
+import thunderUrl from './assets/thunder.mp3'
+const LS_AUDIO = 'raijin:audio-on'
+
+function ThunderEngine() {
+  const [enabled, setEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(LS_AUDIO) === '1' } catch { return false }
+  })
+  const [available, setAvailable] = useState(true)
+  const ctxRef = useRef<AudioContext | null>(null)
+  const masterRef = useRef<GainNode | null>(null)
+  const bufferRef = useRef<AudioBuffer | null>(null)
+  const loadingRef = useRef(false)
+
+  useEffect(() => {
+    if (prefersReducedMotion() || isMobile()) {
+      setAvailable(false); setEnabled(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_AUDIO, enabled ? '1' : '0') } catch {}
+  }, [enabled])
+
+  useEffect(() => {
+    if (!enabled || !available) return
+    let cancelled = false
+    let ctx: AudioContext
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      ctx = new AC()
+    } catch {
+      setAvailable(false); return
+    }
+    ctxRef.current = ctx
+    const master = ctx.createGain()
+    master.gain.value = 0.85
+    master.connect(ctx.destination)
+    masterRef.current = master
+
+    if (!bufferRef.current && !loadingRef.current) {
+      loadingRef.current = true
+      fetch(thunderUrl)
+        .then((r) => r.arrayBuffer())
+        .then((ab) => ctx.decodeAudioData(ab))
+        .then((buf) => { if (!cancelled) bufferRef.current = buf })
+        .catch((err) => { console.warn('Thunder sample failed to load:', err) })
+        .finally(() => { loadingRef.current = false })
+    }
+
+    return () => {
+      cancelled = true
+      try { ctx.close() } catch {}
+      ctxRef.current = null; masterRef.current = null
+    }
+  }, [enabled, available])
+
+  const ensureRunning = useCallback(() => {
+    const ctx = ctxRef.current
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {})
+  }, [])
+
+  const fireRumble = useCallback((peak: number) => {
+    const ctx = ctxRef.current, master = masterRef.current, buf = bufferRef.current
+    if (!ctx || !master || !buf) return
+    const now = ctx.currentTime
+    const rate = 0.78 + Math.random() * 0.42
+    const vol  = (0.55 + Math.random() * 0.45) * Math.min(1, peak / 1.4)
+    const maxStart = Math.max(0, buf.duration - 1.6)
+    const startOffset = Math.random() * maxStart * 0.4
+    const playableDur = Math.max(0.5, (buf.duration - startOffset) / rate)
+
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.playbackRate.value = rate
+
+    const env = ctx.createGain()
+    const fadeIn = 0.04, fadeOut = 0.35
+    env.gain.setValueAtTime(0.0001, now)
+    env.gain.exponentialRampToValueAtTime(vol, now + fadeIn)
+    env.gain.setValueAtTime(vol, now + playableDur - fadeOut)
+    env.gain.exponentialRampToValueAtTime(0.001, now + playableDur)
+
+    src.connect(env).connect(master)
+    src.start(now, startOffset)
+    src.stop(now + playableDur + 0.05)
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !available) return
+    const onStrike = (e: Event) => {
+      const peak = (e as CustomEvent<{ peak: number }>).detail?.peak ?? 1.3
+      ensureRunning()
+      fireRumble(peak)
+    }
+    window.addEventListener('raijin:strike-start', onStrike)
+    return () => window.removeEventListener('raijin:strike-start', onStrike)
+  }, [enabled, available, fireRumble, ensureRunning])
+
+  if (!available) {
+    return (
+      <button className="thunder-toggle disabled" disabled aria-label="Thunder unavailable">
+        <SpeakerIcon muted />
+        <span className="thunder-label">SILENT</span>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      className={`thunder-toggle ${enabled ? 'on' : 'off'}`}
+      aria-pressed={enabled}
+      aria-label={enabled ? 'Mute thunder' : 'Enable thunder'}
+      onClick={() => {
+        setEnabled((v) => !v)
+        setTimeout(ensureRunning, 30)
+      }}
+    >
+      <SpeakerIcon muted={!enabled} />
+      <span className="thunder-label">{enabled ? 'THUNDER' : 'SILENT'}</span>
+    </button>
+  )
+}
+
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 22 22" fill="none" className={`speaker-icon ${muted ? 'muted' : ''}`} aria-hidden>
+      <path d="M3 8.5 V13.5 H6 L11 17.5 V4.5 L6 8.5 Z" fill="currentColor"/>
+      {!muted && <>
+        <path d="M14 7.5 Q16 11 14 14.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+        <path d="M16.5 5.5 Q19.5 11 16.5 16.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+      </>}
+      {muted && <path d="M14 7 L20 16" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>}
+    </svg>
+  )
+}
+
 // ── Logo (nav / footer use original) ─────────────────────────────────────
 function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; alt?: string }) {
   return (
@@ -520,6 +661,8 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Thunder toggle (Apple-style speaker, bottom-right) */}
+      <ThunderEngine />
     </div>
   )
 }

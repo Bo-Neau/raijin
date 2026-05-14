@@ -941,6 +941,38 @@ body {
 }
 @media (max-width: 768px) { .dust-particles { display: none; } }
 
+/* ── Thunder toggle (Apple-style speaker, bottom-right) ─────────────────── */
+.thunder-toggle {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9100;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px 10px 12px;
+  background: rgba(10, 10, 12, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--gray-200);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.thunder-toggle:hover {
+  background: rgba(20, 20, 24, 0.75);
+  color: var(--lightning-white);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.thunder-toggle.on {
+  color: var(--lightning-white);
+  border-color: rgba(240, 248, 255, 0.45);
+  box-shadow: 0 0 24px rgba(240, 248, 255, 0.12);
+}
+.thunder-toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+.speaker-icon { display: inline-block; flex-shrink: 0; }
+
 /* ── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .camera-zoom, .camera-pan, .breathing-vignette, .sweep-beam, .dust { animation: none !important; }
