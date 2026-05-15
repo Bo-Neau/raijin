@@ -488,17 +488,168 @@ function Marquee() {
   )
 }
 
+// ── Reveal-on-scroll (Functional Fluidity + Kinetic Precision) ────────────
+// Single IntersectionObserver shared across all .reveal nodes; once a node
+// is past 12% visibility we flip .visible. Reveal-once (no thrash).
+function useRevealObserver() {
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>('.reveal')
+    if (!('IntersectionObserver' in window)) {
+      // Graceful degradation: just reveal everything
+      els.forEach((el) => el.classList.add('visible'))
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible')
+            io.unobserve(e.target)
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+}
+
+// ── Services (editorial row layout) ───────────────────────────────────────
+const SERVICES = [
+  {
+    n: '01',
+    label: 'Velocity',
+    title: 'Strike Fast',
+    body:
+      'Rapid deployment and execution at the speed of lightning. We cut through complexity and deliver before the thunder follows the flash.',
+    deliverables: ['Strategy sprint', '4-week shipping', 'Daily standups'],
+  },
+  {
+    n: '02',
+    label: 'Architecture',
+    title: 'Forge Systems',
+    body:
+      'Architecting robust, scalable systems forged under pressure. Like steel tempered by lightning, our solutions are built to withstand any storm.',
+    deliverables: ['System design', 'Scalable infra', 'Hardening audit'],
+  },
+  {
+    n: '03',
+    label: 'Leadership',
+    title: 'Command the Storm',
+    body:
+      "Strategic leadership and transformation that channels the energy of change into controlled, purposeful momentum. We don't weather storms — we direct them.",
+    deliverables: ['Fractional CTO', 'Roadmap clarity', 'Team enablement'],
+  },
+]
+
+function Services() {
+  return (
+    <section className="section-services-v2" id="services">
+      <header className="services-v2-header reveal">
+        <div className="section-label" style={{ justifyContent: 'center' }}>What we do</div>
+        <h2 className="section-heading-display">
+          The force behind<br />your next strike.
+        </h2>
+      </header>
+
+      <div className="service-rows">
+        {SERVICES.map((s, i) => (
+          <article
+            key={s.n}
+            className="service-row reveal"
+            style={{ transitionDelay: `${i * 90}ms` }}
+          >
+            <div className="service-row-num" aria-hidden>{s.n}</div>
+            <div className="service-row-body">
+              <div className="service-row-label">{s.label}</div>
+              <h3 className="service-row-title">{s.title}</h3>
+              <p className="service-row-desc">{s.body}</p>
+              <ul className="service-row-list">
+                {s.deliverables.map((d) => (
+                  <li key={d}><span aria-hidden>—</span> {d}</li>
+                ))}
+              </ul>
+            </div>
+            <a className="service-row-link" href="#contact" aria-label={`Engage ${s.title}`}>
+              <span>Engage</span>
+              <span className="cta-arrow" aria-hidden>→</span>
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ── Reviews — editorial pull-quotes + client strip ────────────────────────
+const REVIEWS = [
+  {
+    quote:
+      'Raijin shipped in five weeks what our previous vendor failed to deliver in nine months. The storm metaphor isn’t marketing — it’s their operating cadence.',
+    name: 'Akiko Sato',
+    role: 'Head of Platform, Yamato Logistics',
+  },
+  {
+    quote:
+      'Their restraint is what separates them. Every choice is a deletion. The result feels inevitable, which is the highest compliment I can pay design work.',
+    name: 'David Chen',
+    role: 'Founder, Atlas Capital',
+  },
+  {
+    quote:
+      'We hired Raijin to forge a system. They handed us a doctrine. The team now ships with the same conviction our customers feel.',
+    name: 'Priya Iyer',
+    role: 'CTO, Northwind AI',
+  },
+]
+
+const CLIENTS = ['Yamato', 'Atlas', 'Northwind', 'Helios', 'Kintsugi', 'Sequoia']
+
+function Reviews() {
+  return (
+    <section className="section-reviews" id="reviews">
+      <header className="reviews-header reveal">
+        <div className="section-label" style={{ justifyContent: 'center' }}>Signal from the field</div>
+        <h2 className="section-heading-display">
+          The thunder is heard<br />long after the strike.
+        </h2>
+      </header>
+
+      <div className="reviews-grid">
+        {REVIEWS.map((r, i) => (
+          <figure key={r.name} className="review-card reveal" style={{ transitionDelay: `${i * 110}ms` }}>
+            <div className="review-mark" aria-hidden>“</div>
+            <blockquote className="review-quote">{r.quote}</blockquote>
+            <figcaption className="review-attribution">
+              <span className="review-name">{r.name}</span>
+              <span className="review-role">{r.role}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+
+      <div className="client-strip reveal" aria-label="Trusted by">
+        <span className="client-strip-label">Trusted by</span>
+        <div className="client-strip-list">
+          {CLIENTS.map((c) => <span key={c} className="client-logo">{c}</span>)}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function Stats() {
   return (
     <section className="stats-strip">
       <div className="stats-grid">
-        <div className="stat"><div className="stat-num">12<span>+</span></div><div className="stat-label">Years of velocity</div></div>
+        <div className="stat reveal"><div className="stat-num">12<span>+</span></div><div className="stat-label">Years of velocity</div></div>
         <div className="stat-divider" />
-        <div className="stat"><div className="stat-num">120<span>+</span></div><div className="stat-label">Storms weathered</div></div>
+        <div className="stat reveal" style={{ transitionDelay: '90ms' }}><div className="stat-num">120<span>+</span></div><div className="stat-label">Storms weathered</div></div>
         <div className="stat-divider" />
-        <div className="stat"><div className="stat-num">24<span>/7</span></div><div className="stat-label">Lightning ready</div></div>
+        <div className="stat reveal" style={{ transitionDelay: '180ms' }}><div className="stat-num">24<span>/7</span></div><div className="stat-label">Lightning ready</div></div>
         <div className="stat-divider" />
-        <div className="stat"><div className="stat-num">∞</div><div className="stat-label">Thunder ahead</div></div>
+        <div className="stat reveal" style={{ transitionDelay: '270ms' }}><div className="stat-num">∞</div><div className="stat-label">Thunder ahead</div></div>
       </div>
     </section>
   )
@@ -508,6 +659,7 @@ function Stats() {
 export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [isFlashing, setIsFlashing] = useState(false)
+  useRevealObserver()
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 40)
     return () => clearTimeout(t)
@@ -526,6 +678,7 @@ export default function App() {
         <ul className="nav-links">
           <li><a href="#about">About</a></li>
           <li><a href="#services">Services</a></li>
+          <li><a href="#reviews">Reviews</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
@@ -586,41 +739,32 @@ export default function App() {
       <Stats />
       <div className="storm-divider" />
 
-      <section className="section-services" id="services">
-        <div className="services-header">
-          <div className="section-label" style={{ justifyContent: 'center' }}>What We Do</div>
-          <h2 className="section-heading">The force behind your vision</h2>
-        </div>
-        <div className="services-grid">
-          <div className="service-card">
-            <div className="service-number">01 / 03</div>
-            <div className="service-title">Strike Fast</div>
-            <p className="service-desc">Rapid deployment and execution at the speed of lightning. We cut through complexity and deliver results before the thunder follows the flash.</p>
-            <span className="service-link">Learn more <span aria-hidden>→</span></span>
-          </div>
-          <div className="service-card">
-            <div className="service-number">02 / 03</div>
-            <div className="service-title">Forge Systems</div>
-            <p className="service-desc">Architecting robust, scalable systems forged under pressure. Like steel tempered by lightning, our solutions are built to withstand any storm.</p>
-            <span className="service-link">Learn more <span aria-hidden>→</span></span>
-          </div>
-          <div className="service-card">
-            <div className="service-number">03 / 03</div>
-            <div className="service-title">Command the Storm</div>
-            <p className="service-desc">Strategic leadership and transformation that channels the energy of change into controlled, purposeful momentum. We don't weather storms — we direct them.</p>
-            <span className="service-link">Learn more <span aria-hidden>→</span></span>
-          </div>
-        </div>
-      </section>
+      <Services />
 
       <div className="storm-divider" />
 
-      <section className="section-contact" id="contact">
-        <div className="contact-content">
-          <div className="section-label" style={{ justifyContent: 'center' }}>Summon Us</div>
-          <h2 className="contact-heading">Ready to harness<br />the storm?</h2>
-          <p className="contact-sub">The thunder answers those bold enough to call upon it.</p>
-          <button className="cta-button"><span>Initiate Contact</span><span className="cta-arrow" aria-hidden>→</span></button>
+      <Reviews />
+
+      <div className="storm-divider" />
+
+      <section className="section-contact-v2" id="contact">
+        <div className="contact-v2-inner">
+          <div className="section-label reveal" style={{ justifyContent: 'center' }}>Summon the storm</div>
+          <h2 className="contact-v2-heading reveal" style={{ transitionDelay: '90ms' }}>
+            When you’re ready to<br />
+            <em>call the thunder</em>,<br />
+            we’re already moving.
+          </h2>
+          <p className="contact-v2-sub reveal" style={{ transitionDelay: '180ms' }}>
+            Strategy intakes open this quarter · Engagements begin within 14 days
+          </p>
+          <div className="contact-v2-actions reveal" style={{ transitionDelay: '260ms' }}>
+            <a className="cta-button-v2" href="mailto:hello@raijin.co">
+              <span>Begin the engagement</span>
+              <span className="cta-arrow" aria-hidden>→</span>
+            </a>
+            <a className="cta-link" href="mailto:hello@raijin.co">hello@raijin.co</a>
+          </div>
         </div>
       </section>
 
