@@ -1054,6 +1054,113 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   P3 PASS — focus, nav underline, review quote lift, scroll progress
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Keyboard focus — only shows when navigating via keyboard, not mouse */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--lightning-white);
+  outline-offset: 4px;
+  border-radius: 2px;
+  transition: outline-offset 180ms ease;
+}
+a:focus-visible,
+button:focus-visible {
+  outline-offset: 6px;
+}
+
+/* Scroll-progress hairline (1px top of page) */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  z-index: 9500;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+.scroll-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(240, 248, 255, 0.55), var(--lightning-white));
+  transition: width 90ms linear;
+  box-shadow: 0 0 8px rgba(240, 248, 255, 0.45);
+}
+
+/* Nav-link underline-draw on hover */
+.nav-links a {
+  position: relative;
+  padding-bottom: 4px;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--lightning-white);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nav-links a:hover::after,
+.nav-links a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Reviews — quote-mark hover lift + grow */
+.review-mark {
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              color 350ms ease;
+  transform-origin: top left;
+}
+.review-card:hover .review-mark {
+  transform: scale(1.18) translate3d(2px, -4px, 0);
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Horizon — white cut-out logo (replaces brush text mark) */
+.horizon-logo-img {
+  width: clamp(120px, 14vw, 180px);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  filter: invert(1);
+  opacity: 0.92;
+}
+
+/* About — principles list with mono numbers + clean type */
+.about-principles {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.about-principles li {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: baseline;
+  gap: 16px;
+}
+.principle-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  color: var(--gray-300);
+  text-transform: uppercase;
+}
+.principle-text {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    HALO + COGNITIVE FLUENCY + PEAK-END (Sam Crawford pass)
    ════════════════════════════════════════════════════════════════════════ */
 
@@ -1104,14 +1211,6 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 36px;
-}
-.horizon-mark {
-  font-family: var(--font-brush), var(--font-display);
-  font-size: clamp(3.5rem, 8vw, 6rem);
-  line-height: 1;
-  color: var(--lightning-white);
-  letter-spacing: 0.12em;
-  opacity: 0.92;
 }
 .horizon-line-text {
   font-family: var(--font-heading);

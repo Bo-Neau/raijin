@@ -630,6 +630,37 @@ function CountUp({
   )
 }
 
+// ── Scroll progress hairline (top of page) ─────────────────────────────
+function ScrollProgress() {
+  const [pct, setPct] = useState(0)
+  useEffect(() => {
+    let raf = 0
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
+      setPct(p * 100)
+      raf = 0
+    }
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [])
+  return (
+    <div className="scroll-progress" aria-hidden>
+      <div className="scroll-progress-fill" style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
 function Stats() {
   return (
     <section className="stats-strip">
@@ -665,6 +696,7 @@ export default function App() {
   return (
     <div className={`site ${loaded ? 'loaded' : ''}`}>
       <div className="grain" aria-hidden />
+      <ScrollProgress />
 
       {/* Full-page lightning flash overlay (5% peak, 80ms ramp, 600ms decay) */}
       <FlashOverlay />
@@ -721,15 +753,32 @@ export default function App() {
       <section className="section-about" id="about">
         <div className="about-grid">
           <div>
-            <div className="section-label">Our Origin</div>
-            <h2 className="section-heading">Born from the storm.<br />Built for impact.</h2>
-            <div className="section-body">
-              <p>Raijin takes its name from the Japanese god of lightning, thunder, and storms — a deity of raw, primal force who shapes the world through electrical fury. We embody that same energy: swift, powerful, and transformative.</p>
-              <p>Where others see turbulence, we see opportunity. Every storm brings clarity. Every lightning strike illuminates what was hidden in darkness. We harness that energy to drive the future forward.</p>
-              <p>Rooted in ancient wisdom, operating at the speed of light.</p>
+            <div className="section-label reveal">Our Origin</div>
+            <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+              Born from the storm.<br />Built for impact.
+            </h2>
+            <div className="section-body reveal" style={{ transitionDelay: '120ms' }}>
+              <p>Named after the Japanese god of lightning, thunder, and storms, Raijin is a studio for teams who refuse to wait on quarter-long roadmaps.</p>
+              <p>We forge systems with the speed of a strike and the discipline of a doctrine.</p>
             </div>
+            <ul className="about-principles reveal" style={{ transitionDelay: '200ms' }}>
+              <li>
+                <span className="principle-num">01</span>
+                <span className="principle-text">Strike before the thunder. Decision velocity is leverage.</span>
+              </li>
+              <li>
+                <span className="principle-num">02</span>
+                <span className="principle-text">Build systems, not features. The doctrine outlasts the team.</span>
+              </li>
+              <li>
+                <span className="principle-num">03</span>
+                <span className="principle-text">Ruthless restraint. Every choice is a deletion.</span>
+              </li>
+            </ul>
           </div>
-          <div className="about-side"><Logo className="about-logo-img" alt="" /></div>
+          <div className="about-side reveal" style={{ transitionDelay: '160ms' }}>
+            <Logo className="about-logo-img" alt="" />
+          </div>
         </div>
       </section>
 
@@ -770,7 +819,10 @@ export default function App() {
       <section className="section-horizon" aria-label="Final beat">
         <div className="horizon-line" aria-hidden />
         <div className="horizon-content reveal">
-          <div className="horizon-mark" aria-hidden>雷神</div>
+          <picture>
+            <source srcSet={raijinLogoWebp} type="image/webp" />
+            <img src={raijinLogoPng} alt="" className="horizon-logo-img" />
+          </picture>
           <p className="horizon-line-text">When the storm is needed, you already know who to call.</p>
           <a className="horizon-link" href="mailto:hello@raijin.co">
             <span>hello@raijin.co</span>
