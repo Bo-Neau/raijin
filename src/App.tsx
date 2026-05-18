@@ -10,7 +10,7 @@
 // Companion: append the CSS at the bottom of src/index.css.
 // ============================================================================
 
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
 import { Fog } from './components/ui/fog'
 import { RainBackground } from './components/ui/rain'
@@ -267,62 +267,6 @@ function StormLogo({ className }: { className?: string }) {
 
 // ── Ambient atmosphere ────────────────────────────────────────────────────
 function BreathingVignette() { return <div className="breathing-vignette" aria-hidden /> }
-
-function SweepBeam() {
-  const ref = useRef<HTMLDivElement | null>(null)
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const trigger = () => {
-      const el = ref.current
-      if (!el) return
-      el.classList.remove('sweeping')
-      void el.offsetWidth
-      el.classList.add('sweeping')
-    }
-    const schedule = () => {
-      const delay = 25000 + Math.random() * 10000
-      timer = setTimeout(() => { trigger(); schedule() }, delay)
-    }
-    const first = setTimeout(trigger, 12000)
-    schedule()
-    return () => { if (timer) clearTimeout(timer); clearTimeout(first) }
-  }, [])
-  return <div className="sweep-beam" ref={ref} aria-hidden />
-}
-
-function DustParticles() {
-  const mobile = useMemo(() => isMobile(), [])
-  const particles = useMemo(
-    () => Array.from({ length: 32 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      size: 1 + Math.random() * 2,
-      delay: -Math.random() * 30,
-      duration: 22 + Math.random() * 18,
-      drift: -3 + Math.random() * 6,
-    })),
-    [],
-  )
-  if (mobile) return null
-  return (
-    <div className="dust-particles" aria-hidden>
-      {particles.map((p) => (
-        <span
-          key={p.id}
-          className="dust"
-          style={{
-            left: `${p.left}%`,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-            ['--drift' as any]: `${p.drift}vw`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
 
 // ── Thunder engine (real sample) ──────────────────────────────────────────
 import thunderUrl from './assets/thunder.mp3'
@@ -639,17 +583,71 @@ function Reviews() {
   )
 }
 
+// CountUp — animates a number from 0 → target over `duration` ms with ease-out
+// when the host element enters the viewport. Single IntersectionObserver per
+// instance; fires once and disconnects.
+function CountUp({
+  to,
+  duration = 1400,
+  suffix = '',
+  className = '',
+}: { to: number; duration?: number; suffix?: string; className?: string }) {
+  const [val, setVal] = useState(0)
+  const ref = useRef<HTMLSpanElement | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !('IntersectionObserver' in window)) {
+      setVal(to)
+      return
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        io.disconnect()
+        const start = performance.now()
+        let raf = 0
+        const tick = (t: number) => {
+          const p = Math.min(1, (t - start) / duration)
+          // ease-out cubic
+          const eased = 1 - Math.pow(1 - p, 3)
+          setVal(Math.round(to * eased))
+          if (p < 1) raf = requestAnimationFrame(tick)
+        }
+        raf = requestAnimationFrame(tick)
+        return () => cancelAnimationFrame(raf)
+      },
+      { threshold: 0.4 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [to, duration])
+
+  return (
+    <span ref={ref} className={className}>
+      {val.toLocaleString()}{suffix}
+    </span>
+  )
+}
+
 function Stats() {
   return (
     <section className="stats-strip">
-      <div className="stats-grid">
-        <div className="stat reveal"><div className="stat-num">12<span>+</span></div><div className="stat-label">Years of velocity</div></div>
+      <div className="stats-grid stats-grid-3">
+        <div className="stat reveal">
+          <div className="stat-num"><CountUp to={12} suffix="+" /></div>
+          <div className="stat-label">Years of velocity</div>
+        </div>
         <div className="stat-divider" />
-        <div className="stat reveal" style={{ transitionDelay: '90ms' }}><div className="stat-num">120<span>+</span></div><div className="stat-label">Storms weathered</div></div>
+        <div className="stat reveal" style={{ transitionDelay: '90ms' }}>
+          <div className="stat-num"><CountUp to={120} suffix="+" /></div>
+          <div className="stat-label">Storms weathered</div>
+        </div>
         <div className="stat-divider" />
-        <div className="stat reveal" style={{ transitionDelay: '180ms' }}><div className="stat-num">24<span>/7</span></div><div className="stat-label">Lightning ready</div></div>
-        <div className="stat-divider" />
-        <div className="stat reveal" style={{ transitionDelay: '270ms' }}><div className="stat-num">∞</div><div className="stat-label">Thunder ahead</div></div>
+        <div className="stat reveal" style={{ transitionDelay: '180ms' }}>
+          <div className="stat-num">24<span>/7</span></div>
+          <div className="stat-label">Lightning ready</div>
+        </div>
       </div>
     </section>
   )
@@ -703,20 +701,19 @@ export default function App() {
         />
 
         <BreathingVignette />
-        <SweepBeam />
 
         <div className="hero-content">
           <div className="hero-logo-wrap">
             <StormLogo />
           </div>
-          <p className="hero-subtitle">Ancient power. Modern velocity.</p>
-          <button className="hero-cta" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}>
-            <span>Enter the Storm</span>
+          <p className="hero-eyebrow-v2">雷神 · The God of Thunder</p>
+          <p className="hero-value">Premium engineering. Forged fast.</p>
+          <p className="hero-subtitle">We architect systems that ship in weeks — not quarters.</p>
+          <button className="hero-cta" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
+            <span>Start an engagement</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </button>
         </div>
-
-        <DustParticles />
       </section>
 
       <div className="storm-divider" />
@@ -766,6 +763,21 @@ export default function App() {
             <a className="cta-link" href="mailto:hello@raijin.co">hello@raijin.co</a>
           </div>
         </div>
+      </section>
+
+      {/* Final horizon — the Peak-End beat. Quiet, declarative, ends with a single
+          action. The last impression a visitor leaves with. */}
+      <section className="section-horizon" aria-label="Final beat">
+        <div className="horizon-line" aria-hidden />
+        <div className="horizon-content reveal">
+          <div className="horizon-mark" aria-hidden>雷神</div>
+          <p className="horizon-line-text">When the storm is needed, you already know who to call.</p>
+          <a className="horizon-link" href="mailto:hello@raijin.co">
+            <span>hello@raijin.co</span>
+            <span className="cta-arrow" aria-hidden>→</span>
+          </a>
+        </div>
+        <div className="horizon-line" aria-hidden />
       </section>
 
       <Marquee />
