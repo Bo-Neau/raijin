@@ -738,7 +738,7 @@ export default function App() {
           <div className="hero-logo-wrap">
             <StormLogo />
           </div>
-          <p className="hero-eyebrow-v2">Raijin Studio · Design + Engineering</p>
+          <p className="hero-eyebrow-v2">雷神 · Design + Engineering</p>
           <p className="hero-value">The product partner for ambitious teams.</p>
           <p className="hero-subtitle">We help founders and Series-A teams ship products people remember.</p>
           <button className="hero-cta" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
@@ -755,24 +755,24 @@ export default function App() {
           <div>
             <div className="section-label reveal">Our Origin</div>
             <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
-              Born from the storm.<br />Built for impact.
+              Built to strike.<br />Not to pitch.
             </h2>
             <div className="section-body reveal" style={{ transitionDelay: '120ms' }}>
-              <p>Named after the Japanese god of lightning, thunder, and storms, Raijin is a studio for teams who refuse to wait on quarter-long roadmaps.</p>
-              <p>We forge systems with the speed of a strike and the discipline of a doctrine.</p>
+              <p>Raijin is the studio for teams who'd rather build than wait. We design and engineer products fast — without losing the discipline that makes them last.</p>
+              <p>Brand. Product. Engineering. From blank page to shipped surface in weeks — not quarters.</p>
             </div>
             <ul className="about-principles reveal" style={{ transitionDelay: '200ms' }}>
               <li>
                 <span className="principle-num">01</span>
-                <span className="principle-text">Strike before the thunder. Decision velocity is leverage.</span>
+                <span className="principle-text">Strike first. Speed is leverage.</span>
               </li>
               <li>
                 <span className="principle-num">02</span>
-                <span className="principle-text">Build systems, not features. The doctrine outlasts the team.</span>
+                <span className="principle-text">Build doctrine, not features.</span>
               </li>
               <li>
                 <span className="principle-num">03</span>
-                <span className="principle-text">Ruthless restraint. Every choice is a deletion.</span>
+                <span className="principle-text">Every choice is a deletion.</span>
               </li>
             </ul>
           </div>
