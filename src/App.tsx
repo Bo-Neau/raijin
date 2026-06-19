@@ -463,27 +463,27 @@ function useRevealObserver() {
 const SERVICES = [
   {
     n: '01',
-    label: 'Velocity',
-    title: 'Strike Fast',
+    label: 'Brand, web & app',
+    title: 'Product Design',
     body:
-      'Rapid deployment and execution at the speed of lightning. We cut through complexity and deliver before the thunder follows the flash.',
-    deliverables: ['Strategy sprint', '4-week shipping', 'Daily standups'],
+      'Identity systems, marketing sites, and end-to-end product UX. From blank page to shipped surface in 4–6 weeks.',
+    deliverables: ['Brand & identity', 'Marketing site', 'Product UX'],
   },
   {
     n: '02',
-    label: 'Architecture',
-    title: 'Forge Systems',
+    label: 'Frontend, infra, AI',
+    title: 'Engineering',
     body:
-      'Architecting robust, scalable systems forged under pressure. Like steel tempered by lightning, our solutions are built to withstand any storm.',
-    deliverables: ['System design', 'Scalable infra', 'Hardening audit'],
+      'Frontend, backend, and AI integration. Production-grade work from a team that has shipped at scale before.',
+    deliverables: ['Frontend builds', 'Cloud + infra', 'AI integration'],
   },
   {
     n: '03',
-    label: 'Leadership',
-    title: 'Command the Storm',
+    label: 'Vision, GTM, hiring',
+    title: 'Strategy',
     body:
-      "Strategic leadership and transformation that channels the energy of change into controlled, purposeful momentum. We don't weather storms — we direct them.",
-    deliverables: ['Fractional CTO', 'Roadmap clarity', 'Team enablement'],
+      'Product strategy, go-to-market, and team design. Fractional senior leadership for teams scaling fast.',
+    deliverables: ['Fractional CTO', 'GTM strategy', 'Hiring + team design'],
   },
 ]
 
@@ -493,7 +493,7 @@ function Services() {
       <header className="services-v2-header reveal">
         <div className="section-label" style={{ justifyContent: 'center' }}>What we do</div>
         <h2 className="section-heading-display">
-          The force behind<br />your next strike.
+          Three practices.<br />One outcome.
         </h2>
       </header>
 
@@ -667,17 +667,17 @@ function Stats() {
       <div className="stats-grid stats-grid-3">
         <div className="stat reveal">
           <div className="stat-num"><CountUp to={12} suffix="+" /></div>
-          <div className="stat-label">Years of velocity</div>
+          <div className="stat-label">Years in market</div>
         </div>
         <div className="stat-divider" />
         <div className="stat reveal" style={{ transitionDelay: '90ms' }}>
           <div className="stat-num"><CountUp to={120} suffix="+" /></div>
-          <div className="stat-label">Storms weathered</div>
+          <div className="stat-label">Products shipped</div>
         </div>
         <div className="stat-divider" />
         <div className="stat reveal" style={{ transitionDelay: '180ms' }}>
-          <div className="stat-num">24<span>/7</span></div>
-          <div className="stat-label">Lightning ready</div>
+          <div className="stat-num">48<span>hr</span></div>
+          <div className="stat-label">Response time</div>
         </div>
       </div>
     </section>
@@ -738,11 +738,11 @@ export default function App() {
           <div className="hero-logo-wrap">
             <StormLogo />
           </div>
-          <p className="hero-eyebrow-v2">雷神 · The God of Thunder</p>
-          <p className="hero-value">Premium engineering. Forged fast.</p>
-          <p className="hero-subtitle">We architect systems that ship in weeks — not quarters.</p>
+          <p className="hero-eyebrow-v2">Raijin Studio · Design + Engineering</p>
+          <p className="hero-value">The product partner for ambitious teams.</p>
+          <p className="hero-subtitle">We help founders and Series-A teams ship products people remember.</p>
           <button className="hero-cta" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
-            <span>Start an engagement</span>
+            <span>Start a project</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </button>
         </div>
@@ -806,7 +806,7 @@ export default function App() {
           </p>
           <div className="contact-v2-actions reveal" style={{ transitionDelay: '260ms' }}>
             <a className="cta-button-v2" href="mailto:hello@raijin.co">
-              <span>Begin the engagement</span>
+              <span>Start a project</span>
               <span className="cta-arrow" aria-hidden>→</span>
             </a>
             <a className="cta-link" href="mailto:hello@raijin.co">hello@raijin.co</a>
