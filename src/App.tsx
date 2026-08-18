@@ -526,59 +526,109 @@ function Services() {
   )
 }
 
-// ── Reviews — editorial pull-quotes + client strip ────────────────────────
-const REVIEWS = [
+// ── Selected Work — real work only, honest labeling ────────────────────
+// One entry to start (Raijin itself). Adding more later = push another item
+// to the array; the grid + link scaffolding already handles it.
+const SELECTED_WORK = [
   {
-    quote:
-      'Raijin shipped in five weeks what our previous vendor failed to deliver in nine months. The storm metaphor isn’t marketing — it’s their operating cadence.',
-    name: 'Akiko Sato',
-    role: 'Head of Platform, Yamato Logistics',
-  },
-  {
-    quote:
-      'Their restraint is what separates them. Every choice is a deletion. The result feels inevitable, which is the highest compliment I can pay design work.',
-    name: 'David Chen',
-    role: 'Founder, Atlas Capital',
-  },
-  {
-    quote:
-      'We hired Raijin to forge a system. They handed us a doctrine. The team now ships with the same conviction our customers feel.',
-    name: 'Priya Iyer',
-    role: 'CTO, Northwind AI',
+    slug: 'raijin',
+    kind: 'Studio Brand',
+    year: '2026',
+    title: 'Raijin — Studio Identity & Site',
+    summary:
+      'Brand system, kanji wordmark, and interactive storm landing built end-to-end. The studio we launched with.',
   },
 ]
 
-const CLIENTS = ['Yamato', 'Atlas', 'Northwind', 'Helios', 'Kintsugi', 'Sequoia']
-
-function Reviews() {
+function SelectedWork() {
   return (
-    <section className="section-reviews" id="reviews">
-      <header className="reviews-header reveal">
-        <div className="section-label" style={{ justifyContent: 'center' }}>Signal from the field</div>
+    <section className="section-work" id="work">
+      <header className="work-header reveal">
+        <div className="section-label" style={{ justifyContent: 'center' }}>Selected Work</div>
         <h2 className="section-heading-display">
-          The thunder is heard<br />long after the strike.
+          The proof<br />is in the shipping.
         </h2>
       </header>
 
-      <div className="reviews-grid">
-        {REVIEWS.map((r, i) => (
-          <figure key={r.name} className="review-card reveal" style={{ transitionDelay: `${i * 110}ms` }}>
-            <div className="review-mark" aria-hidden>“</div>
-            <blockquote className="review-quote">{r.quote}</blockquote>
-            <figcaption className="review-attribution">
-              <span className="review-name">{r.name}</span>
-              <span className="review-role">{r.role}</span>
-            </figcaption>
-          </figure>
+      <div className="work-grid">
+        {SELECTED_WORK.map((w, i) => (
+          <a
+            key={w.slug}
+            href={`?work=${w.slug}`}
+            className="work-card reveal"
+            style={{ transitionDelay: `${i * 110}ms` }}
+          >
+            <div className="work-card-meta">
+              <span className="work-card-kind">{w.kind}</span>
+              <span className="work-card-year">{w.year}</span>
+            </div>
+            <h3 className="work-card-title">{w.title}</h3>
+            <p className="work-card-summary">{w.summary}</p>
+            <span className="work-card-link">
+              <span>View case study</span>
+              <span className="cta-arrow" aria-hidden>→</span>
+            </span>
+          </a>
         ))}
-      </div>
 
-      <div className="client-strip reveal" aria-label="Trusted by">
-        <span className="client-strip-label">Trusted by</span>
-        <div className="client-strip-list">
-          {CLIENTS.map((c) => <span key={c} className="client-logo">{c}</span>)}
+        {/* Coming-soon slot — signals momentum without faking projects */}
+        <div className="work-card work-card-empty reveal" style={{ transitionDelay: '110ms' }}>
+          <div className="work-card-meta">
+            <span className="work-card-kind">Next</span>
+            <span className="work-card-year">2026</span>
+          </div>
+          <h3 className="work-card-title">Currently in build.</h3>
+          <p className="work-card-summary">
+            We're taking a small number of new engagements this quarter. If your project is a fit, this slot may be yours.
+          </p>
+          <a href="#contact" className="work-card-link">
+            <span>Start a project</span>
+            <span className="cta-arrow" aria-hidden>→</span>
+          </a>
         </div>
       </div>
+    </section>
+  )
+}
+
+// ── Practices — replaces the fake "how clients see us" testimonials ────
+// Answers the question "How do you actually work?" — the second thing every
+// serious prospect asks after "what do you do?"
+function Practices() {
+  const steps = [
+    {
+      n: '01',
+      title: 'Intake',
+      body: 'A 30-minute call. We ask about the problem, the deadline, and who owns the outcome. If we can help, we say so. If we can\'t, we say that too.',
+    },
+    {
+      n: '02',
+      title: 'Sprint',
+      body: 'One or two focused sprints, 2–4 weeks each. Daily progress in a shared channel. No agency theatre — you see what we\'re building as we build it.',
+    },
+    {
+      n: '03',
+      title: 'Ship',
+      body: 'We hand off a system, not a deliverable. Codebase, design tokens, and the doctrine to keep it moving after we\'ve left.',
+    },
+  ]
+  return (
+    <section className="section-practices" id="practices">
+      <header className="practices-header reveal">
+        <div className="section-label" style={{ justifyContent: 'center' }}>How We Work</div>
+        <h2 className="section-heading-display">
+          A cadence you can<br />actually plan around.
+        </h2>
+      </header>
+      <ol className="practice-steps">
+        {steps.map((s, i) => (
+          <li key={s.n} className="practice-step reveal" style={{ transitionDelay: `${i * 110}ms` }}>
+            <div className="practice-step-num">{s.n}</div>
+            <h3 className="practice-step-title">{s.title}</h3>
+            <p className="practice-step-body">{s.body}</p>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }
@@ -708,7 +758,7 @@ export default function App() {
         <ul className="nav-links">
           <li><a href="#about">About</a></li>
           <li><a href="#services">Services</a></li>
-          <li><a href="#reviews">Reviews</a></li>
+          <li><a href="#work">Work</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
@@ -789,7 +839,11 @@ export default function App() {
 
       <div className="storm-divider" />
 
-      <Reviews />
+      <SelectedWork />
+
+      <div className="storm-divider" />
+
+      <Practices />
 
       <div className="storm-divider" />
 
@@ -845,6 +899,7 @@ export default function App() {
             <ul className="footer-links">
               <li><a href="#about">About</a></li>
               <li><a href="#services">Services</a></li>
+              <li><a href="#work">Work</a></li>
               <li><a href="#contact">Contact</a></li>
             </ul>
           </div>
