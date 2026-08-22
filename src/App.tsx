@@ -63,8 +63,80 @@ const isMobile = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(max-width: 768px), (pointer: coarse)').matches
 
+/** React-friendly variant of isMobile() that updates on viewport change */
+function useIsMobile(threshold = 768) {
+  const query = `(max-width: ${threshold}px)`
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia?.(query).matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [query])
+  return mobile
+}
+
+// ── Mobile nav — hamburger + full-screen drawer ─────────────────────────
+type NavLink = { href: string; label: string }
+function MobileNav({ links }: { links: NavLink[] }) {
+  const [open, setOpen] = useState(false)
+
+  // Lock body scroll while the drawer is open
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
+  // Escape closes the drawer
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  return (
+    <>
+      <button
+        className="mobile-menu-toggle"
+        aria-expanded={open}
+        aria-controls="mobile-nav-drawer"
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className={`hamburger ${open ? 'open' : ''}`} aria-hidden>
+          <span /><span /><span />
+        </span>
+      </button>
+
+      <div
+        id="mobile-nav-drawer"
+        className={`mobile-nav-drawer ${open ? 'open' : ''}`}
+        aria-hidden={!open}
+      >
+        <ul className="mobile-nav-links">
+          {links.map((l) => (
+            <li key={l.href}>
+              <a href={l.href} onClick={() => setOpen(false)}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  )
+}
+
 // ── FrameSequence (enhanced) ──────────────────────────────────────────────
 function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void }) {
+  const mobile = isMobile()
+  // On mobile, only pre-decode the frames the scheduler actually shows
+  // (~ 1 MB total instead of ~ 4-5 MB across all 21 frames).
+  const preloadIndices = mobile ? [REST_FRAME, ...STRIKE_FRAMES] : FRAMES.map((_, i) => i)
+  const preloadHint = mobile ? 'lazy' : 'eager'
+
   const [frameIdx, setFrameIdx] = useState(REST_FRAME)
   const [phase, setPhase] = useState<Phase>('rest')
   const [peak, setPeak] = useState(1.0)
@@ -188,10 +260,10 @@ function FrameSequence({ onFlashChange }: { onFlashChange?: (f: boolean) => void
         <div className="frame-seq-overlay" />
 
         <div className="frame-preload" aria-hidden>
-          {FRAMES.map((f, i) => (
+          {preloadIndices.map((i) => (
             <picture key={i}>
-              <source srcSet={f.webp} type="image/webp" />
-              <img src={f.jpg} alt="" loading="eager" decoding="async" />
+              <source srcSet={FRAMES[i].webp} type="image/webp" />
+              <img src={FRAMES[i].jpg} alt="" loading={preloadHint} decoding="async" />
             </picture>
           ))}
         </div>
@@ -735,9 +807,17 @@ function Stats() {
 }
 
 // ── App ──────────────────────────────────────────────────────────────────
+const NAV_LINKS: NavLink[] = [
+  { href: '#about',    label: 'About' },
+  { href: '#services', label: 'Services' },
+  { href: '#work',     label: 'Work' },
+  { href: '#contact',  label: 'Contact' },
+]
+
 export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [isFlashing, setIsFlashing] = useState(false)
+  const mobile = useIsMobile(768)
   useRevealObserver()
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 40)
@@ -756,11 +836,11 @@ export default function App() {
           <Logo className="nav-logo-img" alt="RAIJIN home" />
         </a>
         <ul className="nav-links">
-          <li><a href="#about">About</a></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#work">Work</a></li>
-          <li><a href="#contact">Contact</a></li>
+          {NAV_LINKS.map((l) => (
+            <li key={l.href}><a href={l.href}>{l.label}</a></li>
+          ))}
         </ul>
+        <MobileNav links={NAV_LINKS} />
       </nav>
 
       <section className="section-hero">
@@ -768,19 +848,22 @@ export default function App() {
 
         <Fog active={isFlashing} intensity={0.55} speed={1.2} />
 
-        {/* Volumetric storm clouds — two parallax layers of displaced ellipses */}
-        <StormClouds />
+        {/* Heavy atmospheric effects — desktop only. On phones the FrameSequence
+            + Fog + BreathingVignette + FlashOverlay carry the mood without
+            frying the GPU or battery. */}
+        {!mobile && <StormClouds />}
 
-        {/* Rain — canvas-based, smooth at 60fps. */}
-        <RainBackground
-          intensity={260}
-          speed={0.9}
-          angle={10}
-          color="rgba(174, 194, 224, 0.55)"
-          dropSize={{ min: 0.8, max: 1.6 }}
-          dropLength={{ min: 12, max: 24 }}
-          className="rain-overlay"
-        />
+        {!mobile && (
+          <RainBackground
+            intensity={260}
+            speed={0.9}
+            angle={10}
+            color="rgba(174, 194, 224, 0.55)"
+            dropSize={{ min: 0.8, max: 1.6 }}
+            dropLength={{ min: 12, max: 24 }}
+            className="rain-overlay"
+          />
+        )}
 
         <BreathingVignette />
 

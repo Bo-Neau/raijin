@@ -1,7 +1,51 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import raijinLogoPng from '../assets/raijin-logo-cutout.png'
 import raijinLogoWebp from '../assets/raijin-logo-cutout.webp'
 import '../index.css'
+
+// Local minimal MobileNav (same visual as App.tsx but scoped so the case
+// study page doesn't need to import the whole nav machinery)
+function CaseMobileNav() {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+  const links = [
+    { href: './',              label: 'Home' },
+    { href: './?work=raijin',  label: 'Work' },
+    { href: './#contact',      label: 'Contact' },
+  ]
+  return (
+    <>
+      <button
+        className="mobile-menu-toggle"
+        aria-expanded={open}
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className={`hamburger ${open ? 'open' : ''}`} aria-hidden>
+          <span /><span /><span />
+        </span>
+      </button>
+      <div className={`mobile-nav-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
+        <ul className="mobile-nav-links">
+          {links.map((l) => (
+            <li key={l.href}>
+              <a href={l.href} onClick={() => setOpen(false)}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  )
+}
 
 /**
  * First case study: Raijin itself.
@@ -46,6 +90,7 @@ export default function CaseStudyRaijin() {
           <li><a href="./?work=raijin">Work</a></li>
           <li><a href="./#contact">Contact</a></li>
         </ul>
+        <CaseMobileNav />
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}

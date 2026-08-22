@@ -547,7 +547,124 @@ body {
 
 .nav-links a:hover { color: var(--gray-200); }
 
-@media (max-width: 600px) { .nav-links { display: none; } }
+@media (max-width: 768px) { .nav-links { display: none; } }
+
+/* ── Mobile navigation ─────────────────────────────────────────────────
+   Hamburger toggle sits in the nav row (right-aligned via nav flexbox).
+   The full-screen drawer overlays everything, with backdrop blur. */
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: 0;
+  color: var(--lightning-white);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 260; /* above the drawer so it stays clickable when open */
+}
+@media (max-width: 768px) {
+  .mobile-menu-toggle { display: inline-flex; }
+}
+
+.hamburger {
+  display: block;
+  width: 22px;
+  height: 16px;
+  position: relative;
+}
+.hamburger span {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity   180ms ease,
+              top       280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hamburger span:nth-child(1) { top: 0; }
+.hamburger span:nth-child(2) { top: 7px; }
+.hamburger span:nth-child(3) { top: 14px; }
+.hamburger.open span:nth-child(1) { top: 7px; transform: rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { top: 7px; transform: rotate(-45deg); }
+
+.mobile-nav-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(6, 6, 6, 0.94);
+  -webkit-backdrop-filter: blur(24px);
+          backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 320ms ease, visibility 0s linear 320ms;
+}
+.mobile-nav-drawer.open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 320ms ease, visibility 0s linear 0s;
+}
+.mobile-nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  transform: translateY(12px);
+  opacity: 0;
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms,
+              opacity   400ms ease 120ms;
+}
+.mobile-nav-drawer.open .mobile-nav-links {
+  transform: none;
+  opacity: 1;
+}
+.mobile-nav-links a {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.35rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lightning-white);
+  text-decoration: none;
+  padding: 16px 32px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: color 200ms ease, letter-spacing 300ms ease;
+}
+.mobile-nav-links a:hover,
+.mobile-nav-links a:focus-visible {
+  color: var(--gray-100);
+  letter-spacing: 0.34em;
+}
+
+/* ── Mobile touch-target polish ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Nudge primary CTAs into 48-52px tap heights */
+  .hero-cta { padding: 18px 32px; font-size: 0.7rem; }
+  .cta-button-v2 { padding: 22px 48px; }
+  .cta-link,
+  .horizon-link { padding: 10px 0; }
+  .footer-links a { padding: 8px 0; min-height: 40px; display: inline-flex; align-items: center; }
+  .footer-links a::before { top: 8px; }
+
+  /* Case study nav breathing room */
+  .case-back-link { padding: 8px 0; }
+  .case-facts-inner { gap: 24px; }
+  .case-body { padding: 60px 6vw 40px; }
+  .case-section { margin-bottom: 60px; padding-bottom: 60px; }
+}
 
 /* ── CTA arrow slide-on-hover ────────────────────────────────────────── */
 .cta-arrow {
