@@ -603,6 +603,14 @@ function Services() {
 // to the array; the grid + link scaffolding already handles it.
 const SELECTED_WORK = [
   {
+    slug: 'vestry',
+    kind: 'Clothing Brand',
+    year: '2026',
+    title: 'Vestry — Storefront & Identity',
+    summary:
+      'End-to-end brand and storefront build for an independent apparel label. Product catalog, checkout, and editorial site — shipped as one system.',
+  },
+  {
     slug: 'raijin',
     kind: 'Studio Brand',
     year: '2026',

@@ -1182,13 +1182,14 @@ body {
 
 .work-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   max-width: 1200px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.08);
 }
-@media (max-width: 900px) { .work-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .work-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px)  { .work-grid { grid-template-columns: 1fr; } }
 
 .work-card {
   background: #080808;
