@@ -133,7 +133,7 @@ export default function CaseStudyRaijin() {
           </div>
           <div className="case-fact">
             <div className="case-fact-label">Status</div>
-            <div className="case-fact-value">Shipped · <a href="https://bo-neau.github.io/raijin/" target="_blank" rel="noreferrer">Live site</a></div>
+            <div className="case-fact-value">Shipped · <a href="https://raijinstudio.co" target="_blank" rel="noreferrer">Live site</a></div>
           </div>
         </div>
       </section>
@@ -203,7 +203,7 @@ export default function CaseStudyRaijin() {
           <h2 className="case-section-heading">Ship it as a client would see it.</h2>
           <div className="case-section-body">
             <p>
-              Full brand system, live site at <a href="https://bo-neau.github.io/raijin/" target="_blank" rel="noreferrer">bo-neau.github.io/raijin</a>, source on <a href="https://github.com/Bo-Neau/raijin" target="_blank" rel="noreferrer">GitHub</a>. Deployed via GitHub Pages with a CI build. Total time from blank Vite project to live: three weeks, part-time.
+              Full brand system and live site at <a href="https://raijinstudio.co" target="_blank" rel="noreferrer">raijinstudio.co</a>. Total time from blank project to live: three weeks, part-time.
             </p>
             <p>
               This is the process we'll apply to your project — same discipline, same cadence, same commitment to shipping.

@@ -10,7 +10,7 @@ Landing page for **Raijin**, named after the Japanese god of lightning, thunder,
 - **Tailwind CSS** + custom CSS variables
 - **shadcn/ui** primitives
 - Custom timeline-driven frame sequence for the storm/lightning hero
-- Deployed via **GitHub Pages** (see `.github/workflows/deploy.yml`)
+
 
 ## Typography
 
