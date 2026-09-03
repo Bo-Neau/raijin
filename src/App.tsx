@@ -950,11 +950,11 @@ export default function App() {
             Strategy intakes open this quarter · Engagements begin within 14 days
           </p>
           <div className="contact-v2-actions reveal" style={{ transitionDelay: '260ms' }}>
-            <a className="cta-button-v2" href="mailto:hello@raijin.co">
+            <a className="cta-button-v2" href="mailto:contact@raijinstudio.co">
               <span>Start a project</span>
               <span className="cta-arrow" aria-hidden>→</span>
             </a>
-            <a className="cta-link" href="mailto:hello@raijin.co">hello@raijin.co</a>
+            <a className="cta-link" href="mailto:contact@raijinstudio.co">contact@raijinstudio.co</a>
           </div>
         </div>
       </section>
@@ -969,8 +969,8 @@ export default function App() {
             <img src={raijinLogoPng} alt="" className="horizon-logo-img" />
           </picture>
           <p className="horizon-line-text">When the storm is needed, you already know who to call.</p>
-          <a className="horizon-link" href="mailto:hello@raijin.co">
-            <span>hello@raijin.co</span>
+          <a className="horizon-link" href="mailto:contact@raijinstudio.co">
+            <span>contact@raijinstudio.co</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </a>
         </div>
@@ -997,7 +997,7 @@ export default function App() {
           <div className="footer-col">
             <div className="footer-label">Connect</div>
             <ul className="footer-links">
-              <li><a href="#">hello@raijin.co</a></li>
+              <li><a href="mailto:contact@raijinstudio.co">contact@raijinstudio.co</a></li>
               <li><a href="#">LinkedIn</a></li>
               <li><a href="#">Instagram</a></li>
             </ul>

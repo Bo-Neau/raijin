@@ -219,7 +219,7 @@ export default function CaseStudyRaijin() {
           <p className="case-cta-sub">
             We take a small number of engagements each quarter. Reach out if yours might be a fit.
           </p>
-          <a className="cta-button-v2" href="mailto:hello@raijin.co">
+          <a className="cta-button-v2" href="mailto:contact@raijinstudio.co">
             <span>Start a project</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </a>
