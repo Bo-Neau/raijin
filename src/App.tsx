@@ -487,8 +487,15 @@ function Logo({ className, alt = 'RAIJIN — 雷神' }: { className?: string; al
   )
 }
 
+// Social — update when the accounts are live.
+const FACEBOOK_URL  = 'https://www.facebook.com/'
+const INSTAGRAM_URL = 'https://www.instagram.com/'
+
 function Marquee() {
-  const items = ['⚡ ANCIENT POWER','MODERN VELOCITY','雷神','STRIKE FAST','FORGE SYSTEMS','COMMAND THE STORM','EST. MMXXVI']
+  // Service categories, not brand slogans — how agencies actually use a ticker.
+  // (Instrument: "Brand · Marketing · Product"; Ramotion: "Branding · Web
+  //  design · UX design · Design systems · Web app development".)
+  const items = ['BRAND IDENTITY','PRODUCT DESIGN','WEB DEVELOPMENT','DESIGN SYSTEMS','雷神','ECOMMERCE','AI INTEGRATION','GO-TO-MARKET','EST. MMXXVI']
   const list = [...items, ...items, ...items]
   return (
     <div className="marquee" aria-hidden="true">
@@ -950,11 +957,11 @@ export default function App() {
             Strategy intakes open this quarter · Engagements begin within 14 days
           </p>
           <div className="contact-v2-actions reveal" style={{ transitionDelay: '260ms' }}>
-            <a className="cta-button-v2" href="mailto:contact@raijinstudio.co">
+            <a className="cta-button-v2" href="mailto:hello@raijinstudio.co">
               <span>Start a project</span>
               <span className="cta-arrow" aria-hidden>→</span>
             </a>
-            <a className="cta-link" href="mailto:contact@raijinstudio.co">contact@raijinstudio.co</a>
+            <a className="cta-link" href="mailto:hello@raijinstudio.co">hello@raijinstudio.co</a>
           </div>
         </div>
       </section>
@@ -969,8 +976,8 @@ export default function App() {
             <img src={raijinLogoPng} alt="" className="horizon-logo-img" />
           </picture>
           <p className="horizon-line-text">When the storm is needed, you already know who to call.</p>
-          <a className="horizon-link" href="mailto:contact@raijinstudio.co">
-            <span>contact@raijinstudio.co</span>
+          <a className="horizon-link" href="mailto:hello@raijinstudio.co">
+            <span>hello@raijinstudio.co</span>
             <span className="cta-arrow" aria-hidden>→</span>
           </a>
         </div>
@@ -983,7 +990,7 @@ export default function App() {
         <div className="footer-grid">
           <div className="footer-col">
             <Logo className="footer-logo-img" alt="RAIJIN" />
-            <p className="footer-tag">雷神 · The God of Thunder.<br />Ancient power, modern velocity.</p>
+            <p className="footer-tag">雷神 · Raijin Studio.<br />Design and engineering for ambitious teams.</p>
           </div>
           <div className="footer-col">
             <div className="footer-label">Navigate</div>
@@ -997,17 +1004,17 @@ export default function App() {
           <div className="footer-col">
             <div className="footer-label">Connect</div>
             <ul className="footer-links">
-              <li><a href="mailto:contact@raijinstudio.co">contact@raijinstudio.co</a></li>
-              <li><a href="#">LinkedIn</a></li>
-              <li><a href="#">Instagram</a></li>
+              <li><a href="mailto:hello@raijinstudio.co">hello@raijinstudio.co</a></li>
+              <li><a href={FACEBOOK_URL} target="_blank" rel="noreferrer">Facebook</a></li>
+              <li><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram</a></li>
             </ul>
           </div>
           <div className="footer-col">
             <div className="footer-label">Legal</div>
             <ul className="footer-links">
-              <li><a href="#">Privacy</a></li>
-              <li><a href="#">Terms</a></li>
-              <li><a href="#">Imprint</a></li>
+              <li><a href="?page=privacy">Privacy</a></li>
+              <li><a href="?page=terms">Terms</a></li>
+              <li><a href="?page=imprint">Imprint</a></li>
             </ul>
           </div>
         </div>
