@@ -610,6 +610,14 @@ function Services() {
 // to the array; the grid + link scaffolding already handles it.
 const SELECTED_WORK = [
   {
+    slug: 'manussa',
+    kind: 'Fashion House',
+    year: '2026',
+    title: 'Manussa — Art You Can Wear',
+    summary:
+      'Editorial site for a Myanmar fashion house that translates paintings into wearable garments. Gallery-grade presentation for collections, artists, and the atelier.',
+  },
+  {
     slug: 'vestry',
     kind: 'Clothing Brand',
     year: '2026',
@@ -657,22 +665,6 @@ function SelectedWork() {
             </span>
           </a>
         ))}
-
-        {/* Coming-soon slot — signals momentum without faking projects */}
-        <div className="work-card work-card-empty reveal" style={{ transitionDelay: '110ms' }}>
-          <div className="work-card-meta">
-            <span className="work-card-kind">Next</span>
-            <span className="work-card-year">2026</span>
-          </div>
-          <h3 className="work-card-title">Currently in build.</h3>
-          <p className="work-card-summary">
-            We're taking a small number of new engagements this quarter. If your project is a fit, this slot may be yours.
-          </p>
-          <a href="#contact" className="work-card-link">
-            <span>Start a project</span>
-            <span className="cta-arrow" aria-hidden>→</span>
-          </a>
-        </div>
       </div>
     </section>
   )
