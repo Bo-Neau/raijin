@@ -4,7 +4,6 @@ import './index.css'
 import App from './App.tsx'
 import { DemoOne } from './components/ui/hero-odyssey'
 import CaseStudyRaijin from './pages/CaseStudyRaijin'
-import CaseStudyVestry from './pages/CaseStudyVestry'
 import CaseStudyManussa from './pages/CaseStudyManussa'
 import LegalPage, { LEGAL_SLUGS } from './pages/LegalPage'
 
@@ -23,7 +22,6 @@ const pageSlug = params.get('page')
 function Router() {
   if (isDemo) return <DemoOne />
   if (workSlug === 'raijin') return <CaseStudyRaijin />
-  if (workSlug === 'vestry') return <CaseStudyVestry />
   if (workSlug === 'manussa') return <CaseStudyManussa />
   if (pageSlug && LEGAL_SLUGS.includes(pageSlug)) return <LegalPage slug={pageSlug} />
   return <App />

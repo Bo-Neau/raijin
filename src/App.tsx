@@ -618,14 +618,6 @@ const SELECTED_WORK = [
       'Editorial site for a Myanmar fashion house that translates paintings into wearable garments. Gallery-grade presentation for collections, artists, and the atelier.',
   },
   {
-    slug: 'vestry',
-    kind: 'Clothing Brand',
-    year: '2026',
-    title: 'Vestry — Storefront & Identity',
-    summary:
-      'End-to-end brand and storefront build for an independent apparel label. Product catalog, checkout, and editorial site — shipped as one system.',
-  },
-  {
     slug: 'raijin',
     kind: 'Studio Brand',
     year: '2026',

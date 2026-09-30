@@ -1182,14 +1182,15 @@ body {
 
 .work-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* auto-fit rather than a fixed count: with 3 projects this lays out as
+     3 columns, with 2 it splits the row evenly instead of leaving a dead
+     cell, and it collapses to 1 on narrow screens without a media query. */
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 1px;
   max-width: 1200px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.08);
 }
-@media (max-width: 1100px) { .work-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 768px)  { .work-grid { grid-template-columns: 1fr; } }
 
 .work-card {
   background: #080808;
